@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>pyagent — Implementation Notes (Agent Ledger)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #333; padding-bottom: .3rem; }
+  h2 { margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: .2rem; }
+  .status { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .8rem; color: #fff; }
+  .done { background: #2e7d32; } .doing { background: #e65100; } .blocked { background: #b71c1c; }
+  table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: .92rem; }
+  code { background: #f3f3f3; padding: 1px 4px; border-radius: 3px; }
+  .resume { background: #fff8e1; border: 1px solid #f0c36d; padding: .8rem 1rem; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<h1>pyagent — Implementation Notes</h1>
+<p><em>Goal <code>agent-v1</code>: Codex-style terminal coding agent (CLI + TUI) in Python. F1–F8.</em> Updated <strong>2026-08-05</strong>.</p>
+
+<h2>Status summary</h2>
+<p>
+  <span class="status done">DONE</span> F1 可安装可启动 &nbsp;
+  <span class="status done">DONE</span> F2 核心循环 &nbsp;
+  <span class="status done">DONE</span> F3 六工具 &nbsp;
+  <span class="status done">DONE</span> F4 权限 &nbsp;
+  <span class="status done">DONE</span> F5 TUI &nbsp;
+  <span class="status done">DONE</span> F6 会话持久化 &nbsp;
+  <span class="status done">DONE</span> F7 E2E 剧本 &nbsp;
+  <span class="status done">DONE</span> F8 工程质量（README/账本/验收记录）
+</p>
+
+<h2>Project state</h2>
+<p>Package <code>pyagent 0.1.0</code> installed editable in <code>.venv</code>. Full source under <code>src/pyagent</code>, tests under <code>tests/</code>.</p>
+<ul>
+  <li><code>ruff check .</code> → All checks passed (0 errors).</li>
+  <li><code>pytest</code> → 52 passed.</li>
+  <li>Real model: DeepSeek <code>deepseek-chat</code> via OpenAI-compatible endpoint (<code>~/.pyagent/config.toml</code>; key supplied via the persistent user env var <code>DEEPSEEK_API_KEY</code>, set with <code>setx</code>).</li>
+</ul>
+
+<h2>Decisions</h2>
+<table>
+  <tr><th>Topic</th><th>Decision</th></tr>
+  <tr><td>Model provider</td><td>OpenAI-compatible client (<code>openai</code> package) behind <code>LLMClient</code> ABC. Configured to DeepSeek; OpenAI/DashScope/Ollama also work by changing <code>base_url</code>/key.</td></tr>
+  <tr><td>CLI vs TUI</td><td>One entry, two modes: <code>pyagent "prompt"</code> (single-shot, streaming) and bare <code>pyagent</code> (TUI).</td></tr>
+  <tr><td>TUI stack</td><td>rich for rendering (panels/diffs/streaming) + prompt_toolkit when a Windows console exists; falls back to plain <code>input()</code> otherwise so the TUI never crashes off-console.</td></tr>
+  <tr><td>Permissions</td><td>Rules file <code>~/.pyagent/permissions.json</code> (path glob / <code>cmd:</code> prefix); resolution: rule → interactive prompt → config default.</td></tr>
+  <tr><td>Context compression</td><td>Summarise the middle of long histories into a <code>_summary</code> system message (keen-code TurnMemory idea); keeps system + tail verbatim.</td></tr>
+  <tr><td>Windows encoding</td><td>Force UTF-8 stdin/stdout/stderr (<code>errors="replace"</code>); sanitise lone surrogates at model-parse and session-save boundaries.</td></tr>
+</table>
+
+<h2>Timeline / progress</h2>
+<table>
+  <tr><th>Phase</th><th>What was done</th><th>Evidence</th></tr>
+  <tr><td>Scaffold</td><td>pyproject (console script, dev deps), package layout per GOAL.md, config module.</td><td><code>pyagent --version</code> → <code>pyagent 0.1.0</code></td></tr>
+  <tr><td>Core loop</td><td>LLMClient + OpenAI impl, AgentLoop, Session, ContextManager.</td><td>tests/test_loop.py (mock: tool→refill, direct, max_turns, compression)</td></tr>
+  <tr><td>Tools</td><td>Registry + read/write/edit/glob/grep/bash with permission gates.</td><td>tests/test_tools.py (C1–C5) + real-dir runs</td></tr>
+  <tr><td>Permissions</td><td>Rule persistence, prompt resolution, deny feedback.</td><td>tests/test_permissions.py; E-S3 deny walk</td></tr>
+  <tr><td>TUI</td><td>Renderer (streaming, tool panels, diff, permission), app loop + slash commands.</td><td>tests/test_tui.py; manual D1–D5 runs</td></tr>
+  <tr><td>Persistence</td><td>Save/load/list sessions; resume; config effective + invalid-config errors.</td><td>tests/test_messages.py, test_config.py; E-S4 resume</td></tr>
+  <tr><td>E2E</td><td>4 acceptance scenarios with the real model.</td><td>S1 create+run, S2 fix bug, S3 deny delete, S4 resume</td></tr>
+  <tr><td>Quality</td><td>README, ledger, acceptance record.</td><td><code>ruff check .</code> clean, 52 tests green</td></tr>
+</table>
+
+<h2>Bugs found &amp; fixed during verification</h2>
+<ul>
+  <li><code>ensure_allowed</code> returned "deny" from a stored rule without raising → writes still executed. Fixed to raise <code>PermissionDeniedError</code> on any deny.</li>
+  <li>GBK console crashed on <code>⟳</code>/<code>✓</code>/Chinese output → force UTF-8 stdio.</li>
+  <li>Lone surrogates from mid-stream UTF-8 splits crashed JSON dump / model request → clean at model-parse and session-save boundaries; also reconfigure stdin.</li>
+  <li>Non-interactive renderer bypassed the config <code>deny</code> default → fall through to config default when renderer is not interactive.</li>
+  <li>Session-id collisions within the same clock tick → add UUID suffix.</li>
+</ul>
+
+<h2 class="resume">Resume Here</h2>
+<div class="resume">
+  <p><strong>状态：目标已完成。</strong> F1–F8 全部达成，验收记录表（ACCEPTANCE.md）逐条填为「通过」，E2E 四个剧本均走通并有运行记录。GOAL.md 完成标准已勾选。</p>
+  <p><strong>如需继续</strong>：v1 明确不做沙箱 / MCP / 多供应商 / 子 Agent（见 non-goals）。可扩展的接缝：<code>LLMClient</code>（新供应商）、<code>register_tool</code>（MCP 工具）、renderer 协议（新前端）。</p>
+</div>
+
+<h2>Non-goals (v1, respected)</h2>
+<p>Sandbox, MCP, multi-provider, sub-agents, IDE integration, skills, telemetry — intentionally out of scope. Seams: <code>LLMClient</code>, <code>register_tool</code>, renderer protocol.</p>
+
+</body>
+</html>

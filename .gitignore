@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Test & tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# Claude Code local state
+.claude/
+
+# Secrets — never commit API keys
+deepseek_api_key.md
+*.key
+.env
+
+# Local scratch / logs
+*.log
