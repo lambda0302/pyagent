@@ -96,6 +96,7 @@ html, body {
 }
 
 .msg { display: flex; }
+.msg.assistant { flex-direction: column; align-items: flex-start; } /* 卡片若在其中也纵向堆叠 */
 .msg.user { justify-content: flex-end; }
 .msg.error .bubble { background: var(--red); color: #fff; }
 

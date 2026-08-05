@@ -146,7 +146,8 @@ function handle(msg) {
     case "tool_start": {
       const card = makeToolCard(msg.name, msg.preview);
       card.classList.add("running");
-      (state.currentAssistant || messagesEl).appendChild(card);
+      // 卡片加到外层列容器 #messages，避免塞进 .msg（flex 行）导致横排错乱
+      messagesEl.appendChild(card);
       state.toolCardQueue.push(card);
       autoscroll();
       break;
