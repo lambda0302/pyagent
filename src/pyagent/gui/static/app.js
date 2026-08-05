@@ -210,14 +210,20 @@ function showPermission(msg) {
 $("#permission-modal").querySelectorAll("button").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const req = state.permissionReq;
-    if (!req) return;
-    await post("/api/permission", {
-      id: req.id,
-      decision: btn.dataset.decision,
-      remember: btn.dataset.remember === "true",
-    });
-    state.permissionReq = null;
-    $("#permission-modal").classList.add("hidden");
+    try {
+      if (req) {
+        await post("/api/permission", {
+          id: req.id,
+          decision: btn.dataset.decision,
+          remember: btn.dataset.remember === "true",
+        });
+      }
+    } catch (err) {
+      appendMessage("error", "权限确认发送失败：" + err);
+    } finally {
+      state.permissionReq = null;
+      $("#permission-modal").classList.add("hidden");
+    }
   });
 });
 
@@ -230,16 +236,26 @@ function showDiff(msg) {
 
 $("#diff-apply").addEventListener("click", async () => {
   const req = state.diffReq;
-  if (req) await post("/api/diff", { id: req.id, apply: true });
-  state.diffReq = null;
-  $("#diff-modal").classList.add("hidden");
+  try {
+    if (req) await post("/api/diff", { id: req.id, apply: true });
+  } catch (err) {
+    appendMessage("error", "diff 确认发送失败：" + err);
+  } finally {
+    state.diffReq = null;
+    $("#diff-modal").classList.add("hidden");
+  }
 });
 
 $("#diff-cancel").addEventListener("click", async () => {
   const req = state.diffReq;
-  if (req) await post("/api/diff", { id: req.id, apply: false });
-  state.diffReq = null;
-  $("#diff-modal").classList.add("hidden");
+  try {
+    if (req) await post("/api/diff", { id: req.id, apply: false });
+  } catch (err) {
+    appendMessage("error", "diff 确认发送失败：" + err);
+  } finally {
+    state.diffReq = null;
+    $("#diff-modal").classList.add("hidden");
+  }
 });
 
 /* ---------- input / chat ---------- */

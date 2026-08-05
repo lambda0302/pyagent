@@ -137,7 +137,7 @@ html, body {
   max-height: 200px;
   overflow-y: auto;
 }
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 /* input */
 #input-form {
@@ -185,6 +185,7 @@ html, body {
   justify-content: center;
   z-index: 50;
 }
+.modal.hidden { display: none !important; }
 .modal-card {
   background: var(--bg-panel);
   border: 1px solid var(--border);

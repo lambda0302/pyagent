@@ -80,6 +80,7 @@
   <li>依赖：<code>gui</code> extra 新增 <code>pywebview</code>；后端零新依赖（纯标准库）。</li>
   <li>并发模型：主线程跑 webview 事件循环；agent 线程跑 <code>AgentLoop</code>；权限/diff 由 <code>threading.Event</code> 阻塞、前端 POST 解除，超时兜底。</li>
   <li>测试：<code>tests/test_gui.py</code> 10 例（渲染器单测 + urllib 服务端集成 + SSE 权限批准 E2E + 并发 409），全部无头可跑。</li>
+  <li>BUG 修复（2026-08-05）：GUI 弹窗"点确定/取消没反应"——根因是 CSS 顺序，<code>.hidden{display:none}</code>（140 行）定义在 <code>.modal{display:flex}</code>（179 行）之前，同优先级下靠后的 <code>.modal</code> 覆盖了 <code>.hidden</code>，导致弹窗永远显示、永远关不掉。修复：<code>.hidden</code> 加 <code>!important</code> + 新增 <code>.modal.hidden{display:none!important}</code>；按钮处理器改用 try/finally 保证弹窗必定关闭。</li>
   <li>真实模型 E2E：事件序列 <code>snapshot→assistant_delta→tool_start(write)→permission→tool_result→tool_start(bash)→permission→tool_result→final→run_end</code>，文件正确写入。</li>
 </ul>
 
