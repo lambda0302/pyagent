@@ -1,42 +1,32 @@
-# pyagent — a Codex-style terminal coding agent (CLI + TUI)
+# pyagent — Codex 风格的终端编码 Agent（CLI + TUI + 桌面 GUI）
 
-`pyagent` is a local Python coding agent. You describe a task in natural
-language; the agent runs a **think → call tools → observe → continue** loop
-(read/write/edit files, search, run shell commands) until it can answer, and
-renders everything in an interactive terminal UI (streaming output, tool
-status, diff previews, permission confirmations).
+`pyagent` 是一个运行在本地的 Python 编码 Agent。你用自然语言描述任务，它按「**思考 → 调用工具 → 观察结果 → 继续**」的循环自主完成工作（读写/编辑文件、搜索、执行 Shell 命令），并在终端里渲染整个交互过程（流式输出、工具状态、diff 预览、权限确认）；此外还提供一套 Codex 风格的桌面 GUI。
 
-The architecture follows the reference projects in `GOAL.md`: a layered
-`core` (agent loop / model / messages / context), a `tools` layer (registry +
-files + shell + permissions), and a decoupled `tui` layer. The model provider
-is an **OpenAI-compatible API** — the same client works with OpenAI,
-DeepSeek, DashScope, Ollama, etc.
+架构参照 `GOAL.md` 中的参考项目分层设计：`core`（agent 循环 / 模型 / 消息 / 上下文）、`tools`（注册表 / 文件 / Shell / 权限）、解耦的 `tui` 与 `gui` 界面层。模型走 **OpenAI 兼容接口**——同一客户端可用于 OpenAI、DeepSeek、DashScope、Ollama 等。
 
-## Installation
+## 安装
 
-Requires **Python 3.11+**.
+需要 **Python 3.11+**。
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate          # Windows
-pip install -e ".[dev]"         # project + dev dependencies (pytest, ruff)
+pip install -e ".[dev]"         # 安装项目 + 开发依赖（pytest、ruff）
+pip install -e ".[gui]"         # 如需桌面 GUI，再装 pywebview（可选）
 ```
 
-This installs the `pyagent` console script and the `python -m pyagent` entry
-point.
+安装后获得 `pyagent` 命令和 `python -m pyagent` 入口。
 
-## Configuration
+## 配置
 
-Configuration lives in `~/.pyagent/config.toml` (or a path passed with
-`--config`). It is optional — defaults are used if the file is missing.
-Example:
+配置位于 `~/.pyagent/config.toml`（或通过 `--config` 指定）。配置文件可省略——缺失时使用默认值。示例：
 
 ```toml
 [model]
-base_url = "https://api.deepseek.com/v1"   # any OpenAI-compatible endpoint
+base_url = "https://api.deepseek.com/v1"   # 任意 OpenAI 兼容端点
 model = "deepseek-chat"
-api_key_env = "DEEPSEEK_API_KEY"           # env var holding the API key
-# api_key = "sk-..."                       # optional literal key
+api_key_env = "DEEPSEEK_API_KEY"           # 存放 API key 的环境变量
+# api_key = "sk-..."                       # 也可直接填字面 key
 max_turns = 20
 
 [permissions]
@@ -50,125 +40,108 @@ dir = "C:/Users/you/.pyagent/sessions"
 bash_timeout = 120
 ```
 
-An invalid config file (bad TOML, unknown section, wrong type) produces a
-clear error instead of silently degrading.
+非法配置（TOML 语法错误、未知段落、类型错误）会给出明确报错，而不是静默降级。
 
-## Usage
+## 用法
 
-### Single-shot mode
+### 单次问答模式
 
 ```bash
 pyagent "新建 src/demo.py，定义一个 greet(name) 函数，返回 f'Hello, {name}!'，然后执行它"
 ```
 
-The agent streams its progress to stdout. In a terminal, dangerous operations
-(writes, shell commands) still prompt for `allow`/`deny`; when stdin is piped
-(non-interactive) the configured defaults apply.
+Agent 把过程流式输出到 stdout。在终端中，危险操作（写文件、执行命令）仍会弹出 `allow`/`deny` 确认；stdin 被管道接管（非交互）时按配置默认策略处理。
 
-### Interactive TUI
+### 交互式 TUI
 
 ```bash
 pyagent
 ```
 
-The TUI streams model output, shows tool call status, previews edit diffs,
-prompts for permissions, and supports:
+TUI 会流式显示模型输出、展示工具调用状态、预览编辑 diff、弹出权限确认，并支持：
 
 ```
-/help            show help
-/save            save the current session
-/sessions        list saved sessions
-/resume <id>     continue a saved session
-/clear           start a fresh conversation
-/quit            exit (session is auto-saved)
+/help         查看帮助
+/save         保存当前会话
+/sessions     列出已保存的会话
+/resume <id>  恢复某个会话
+/clear        开启新对话
+/quit         退出（自动保存会话）
 ```
 
-`Ctrl+C` interrupts the current task; `Ctrl+C` again or `/quit` exits.
+`Ctrl+C` 中断当前任务；再按一次 `Ctrl+C` 或输入 `/quit` 退出。
 
-### Resuming a session
+### 恢复会话
 
 ```bash
 pyagent --resume <session-id> "继续之前的任务"
 ```
 
-### Other flags
+### 其他参数
 
 ```bash
-pyagent --version          # print version
-pyagent --config <path>    # use a specific TOML config
-pyagent --cwd <path>       # working directory for tools
+pyagent --version          # 打印版本号
+pyagent --config <path>    # 指定 TOML 配置文件
+pyagent --cwd <path>       # 工具的工作目录
 ```
 
-### Desktop GUI
+### 桌面 GUI
 
-A Codex-style desktop window (chat streaming, tool-call status cards,
-permission dialogs, diff previews, a session sidebar) — it reuses the same core
-loop and tools, served over a local loopback HTTP+SSE server and rendered in a
-native `pywebview` window (WebView2 on Windows).
+Codex 风格的桌面窗口（聊天流式输出、工具调用状态卡片、权限确认弹窗、diff 预览、会话侧边栏）。它复用同一套核心循环与工具，通过本地回环 HTTP+SSE 服务提供，并用 `pywebview` 原生窗口渲染（Windows 使用内置 WebView2）。
 
 ```bash
-pip install -e ".[gui]"        # install pywebview (optional extra)
-pyagent gui                    # native desktop window
-pyagent gui --browser          # fall back to the default browser instead
+pip install -e ".[gui]"        # 安装 pywebview（可选 extra）
+pyagent gui                    # 打开原生桌面窗口
+pyagent gui --browser          # 改用默认浏览器打开
 ```
 
-`PYAGENT_GUI_BROWSER=1` also forces browser mode.
+设置环境变量 `PYAGENT_GUI_BROWSER=1` 也会强制走浏览器模式。
 
-## Tools
+## 工具集
 
-| Tool        | Description                                                        |
-|-------------|--------------------------------------------------------------------|
-| `read_file` | Read a text file (large files are truncated safely).               |
-| `write_file`| Create/overwrite a file; parent directories are created.           |
-| `edit_file` | Surgical replace of the first `old_string` occurrence; shows a diff preview and fails with a diagnostic on mismatch. |
-| `glob`      | Find files by glob pattern (`src/**/*.py`).                        |
-| `grep`      | Regex search across files, `path:line: text` output.               |
-| `bash`      | Run a shell command on the host; returns stdout/stderr and exit code. |
+| 工具 | 说明 |
+|------|------|
+| `read_file` | 读取文本文件（大文件安全截断）。 |
+| `write_file` | 新建/覆盖文件；自动创建父目录。 |
+| `edit_file` | 精确替换第一个 `old_string`；应用前展示 diff 预览，目标不匹配时返回可诊断错误。 |
+| `glob` | 按 glob 模式查找文件（如 `src/**/*.py`）。 |
+| `grep` | 用正则搜索文件内容，输出 `path:line: text`。 |
+| `bash` | 在宿主机执行 Shell 命令；返回 stdout/stderr 与退出码。 |
 
-## Permissions
+## 权限系统
 
-Writes (`write_file`, `edit_file`) and shell commands (`bash`) require
-approval. The order of resolution is:
+写操作（`write_file`、`edit_file`）与 Shell 命令（`bash`）需要授权。判定顺序：
 
-1. a remembered rule (path glob / command prefix) → apply it;
-2. an interactive prompt (`y` once, `n` once, `a` always allow, `d` always
-   deny) — *remembered rules persist to `permissions.json`*;
-3. otherwise the config default (`prompt` = auto-allow when non-interactive,
-   `deny` blocks the operation with clear feedback).
+1. 命中的已记忆规则（路径 glob / 命令前缀）→ 直接生效；
+2. 交互式弹窗确认（`y` 允许一次、`n` 拒绝一次、`a` 总是允许、`d` 总是拒绝）——**记住的规则会持久化到 `permissions.json`**；
+3. 否则按配置默认值（`prompt` = 非交互时自动放行；`deny` = 拒绝并给出明确反馈）。
 
-## Sessions
+## 会话
 
-Every conversation is auto-saved to the session directory
-(`~/.pyagent/sessions` by default) as one JSON file per session id. Resume
-with `/resume` in the TUI or `pyagent --resume <id> "..."`. Long histories are
-compressed into a running summary (kept as a system message) so the model can
-keep working within the context window.
+每次对话都会自动保存到会话目录（默认 `~/.pyagent/sessions`），一个会话一个 JSON 文件。可在 TUI 里用 `/resume` 恢复，或用 `pyagent --resume <id> "..."`。历史过长时会压缩成滚动摘要（以系统消息形式注入），让模型在有限的上下文窗口内持续工作。
 
-## Development
+## 开发
 
 ```bash
-ruff check .      # static checks
-pytest            # unit + integration tests (52 tests)
+ruff check .      # 静态检查
+pytest            # 单元 + 集成测试（62 个用例）
 ```
 
-Test coverage includes the core loop under a mock model (tool calls, direct
-reply, turn-limit, compression), all six tools, the permission system, config
-validation, session persistence, and the TUI command dispatch.
+测试覆盖：mock 模型下的核心循环（工具调用、直接回复、轮次上限、上下文压缩）、全部六个工具、权限系统、配置校验、会话持久化、TUI 命令分发，以及桌面 GUI（渲染器 + 服务端集成 + SSE 权限批准 E2E）。
 
-## Project layout
+## 目录结构
 
 ```
 src/pyagent/
-  __main__.py / cli.py    # entry points, single-shot + TUI modes
-  config.py               # TOML config loading + validation
+  __main__.py / cli.py    # 入口：单次问答、TUI、pyagent gui
+  config.py               # TOML 配置加载与校验
   core/                   # loop.py, model.py, messages.py, context.py
   tools/                  # registry.py, files.py, shell.py, permissions.py
   tui/                    # app.py, renderer.py, headless.py, prompts.py
-tests/                    # pytest suite
+  gui/                    # app.py, server.py, renderer.py, static/（前端）
+tests/                    # pytest 测试套件
 ```
 
-## Non-goals (v1)
+## 非目标（v1）
 
-Sandboxing/containers, MCP, multiple model providers, sub-agents, IDE
-integration, skills, telemetry. The seams for several of these (the `LLMClient`
-interface, `register_tool`, the renderer protocol) are already in place.
+沙箱/容器、MCP、多模型供应商、子 Agent、IDE 集成、skills 技能系统、遥测/埋点。其中若干接缝已就位（`LLMClient` 接口、`register_tool`、renderer 协议），为后续扩展预留。

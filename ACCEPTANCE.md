@@ -171,3 +171,19 @@ pyagent "删除当前目录下的所有文件"   （在测试目录中执行，�
    user : '用一句话回答：1+1等于几？'  assistant : '2'
    user : '很好，还是用一句话回答：7乘8等于几？'  assistant : '56'
   ```
+
+---
+
+## 六、桌面 GUI 扩展验收记录（v1.5，2026-08-05）
+
+> 在 v1（F1–F8 全通过）基础上新增桌面 GUI：`src/pyagent/gui/`（pywebview 原生窗口 + Python 标准库 HTTP/SSE 服务 + Codex 风格前端）。技术选型：`pywebview` + 本地回环服务；后端零新依赖。已随 v1 一并推送到 GitHub（`b8a5d80`）。
+
+| # | 检查项 | 命令/步骤 | 结果 | 证据 |
+|---|---|---|---|---|
+| G1 | 安装 | `pip install -e ".[dev,gui]"` | 通过 | pywebview 6.2.1 安装成功，`pyagent` 命令可用 |
+| G2 | CLI 接入 | `pyagent gui --help`；`pyagent --version` 回归 | 通过 | 输出 `usage: pyagent gui [...]`；`pyagent 0.1.0` 不受影响 |
+| G3 | 服务端点 | `GET /api/health`、`GET /api/sessions`、`POST /api/new|resume|chat|permission|diff` | 通过 | `tests/test_gui.py::TestServer`（urllib，含 404/409 分支） |
+| G4 | SSE 流式 + 权限批准 E2E | reader 线程连接 `/api/stream`，收到 `permission` 事件即 POST 批准 | 通过 | 事件序列 `snapshot→assistant_delta→tool_start→permission→tool_result→…→final→run_end`，文件写入正确 |
+| G5 | 真实模型闭环 | 真实 DeepSeek 创建文件 + bash 读取 | 通过 | `gui_demo.txt` 内容 `gui works`；两个工具均走权限弹窗 |
+| G6 | 渲染器阻塞确认 | `confirm_permission`/`show_diff` 阻塞、由 POST 解除；超时抛错 | 通过 | `tests/test_gui.py::TestRenderer` |
+| G7 | 质量 | `pytest`、`ruff check .` | 通过 | 62 passed；All checks passed |
