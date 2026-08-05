@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import queue
 import socket
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -248,8 +249,10 @@ class GuiServer:
         try:
             self.loop.run(prompt=prompt)
         except ModelError as exc:
+            print(f"[pyagent] model error: {exc}", file=sys.stderr)
             self.events.put({"type": "error", "message": str(exc)})
         except Exception as exc:  # noqa: BLE001 - 兜底暴露任何意外失败
+            print(f"[pyagent] error: {exc!r}", file=sys.stderr)
             self.events.put({"type": "error", "message": repr(exc)})
         finally:
             try:
