@@ -1,9 +1,9 @@
-"""Command-line entry: argument parsing, single-shot mode, TUI mode.
+"""命令行入口：参数解析、单次问答模式、TUI 模式。
 
-``pyagent``            → interactive TUI
-``pyagent "prompt"``   → single-shot answer (streamed to stdout)
-``pyagent --version``  → print version
-``pyagent --resume ID``→ continue a saved session (TUI)
+``pyagent``            → 交互式 TUI
+``pyagent "prompt"``   → 单次问答（流式输出到 stdout）
+``pyagent --version``  → 打印版本号
+``pyagent --resume ID``→ 继续一个已保存的会话（TUI）
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from pyagent.config import ConfigError, load_config
 def main(argv: list[str] | None = None) -> int:
     _force_utf8_stdio()
     argv = list(sys.argv[1:] if argv is None else argv)
-    # ``prompt`` is a positional arg, so a true argparse subparser would steal
-    # the first non-option token from `pyagent "some prompt"`.  Sniff instead.
+    # ``prompt`` 是位置参数，用真正的 argparse 子命令会抢走第一个非选项 token，
+    # 破坏 `pyagent "some prompt"`。因此用首 token 嗅探。
     if argv and argv[0] == "gui":
         return _run_gui(argv[1:])
     parser = _build_parser()
@@ -47,15 +47,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _force_utf8_stdio() -> None:
-    """Use UTF-8 with lossy replacement for stdin/stdout/stderr so Unicode
-    (✓, Chinese, ...) never crashes on a GBK/CP936 Windows console and piped
-    UTF-8 input never produces lone surrogates (which would corrupt the LLM
-    request body)."""
+    """把 stdin/stdout/stderr 统一成 UTF-8 + 有损替换，让 Unicode（✓、中文等）
+    在 GBK/CP936 的 Windows 控制台上也不会崩溃，并且管道输入的 UTF-8 不会产生
+    孤立的代理字符（那会破坏 LLM 请求体）。"""
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
-            pass  # not a real text stream / already configured
+            pass  # 不是真正的文本流 / 已经配置过
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -126,7 +125,7 @@ def _run_single(config, session_dir: Path, prompt: str, resume_id: str | None, c
 
     try:
         session.save(session_dir)
-    except Exception as exc:  # noqa: BLE001 - serialisation issues are non-fatal
+    except Exception as exc:  # noqa: BLE001 - 序列化问题非致命
         print(f"warning: could not save session: {exc}", file=sys.stderr)
     else:
         print(f"\n── session saved: {session.session_id} (resume: pyagent --resume {session.session_id})")
@@ -134,7 +133,7 @@ def _run_single(config, session_dir: Path, prompt: str, resume_id: str | None, c
 
 
 def _run_gui(argv: list[str]) -> int:
-    """Launch the desktop GUI (`pyagent gui [--browser] [--config PATH] [--cwd PATH] [--port N]`)."""
+    """启动桌面 GUI（`pyagent gui [--browser] [--config PATH] [--cwd PATH] [--port N]`）。"""
     from pyagent.gui.app import run_gui
 
     parser = argparse.ArgumentParser(prog="pyagent gui", description="Launch the desktop GUI.")
@@ -171,7 +170,7 @@ def _run_tui(config, session_dir: Path, resume_id: str | None, cwd: Path) -> int
 
     try:
         app = make_app(config, session_dir)
-    except Exception as exc:  # noqa: BLE001 - fail with a clear message
+    except Exception as exc:  # noqa: BLE001 - 以清晰消息失败
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

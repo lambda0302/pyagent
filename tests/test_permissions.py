@@ -1,4 +1,4 @@
-"""F4: permission system — rules, prompting, deny, remember-rule persistence."""
+"""F4：权限系统——规则、提示、拒绝、记住规则的持久化。"""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class TestRules:
         mgr = PermissionManager(rules_file=rules_file)
         mgr.add_rule(ACTION_WRITE, "C:/x/*.txt", "deny")
         assert (tmp_path / "rules.json").exists()
-        # a fresh manager loads the remembered rule
+        # 新管理器能加载到记住的规则
         reloaded = PermissionManager(rules_file=rules_file)
         reloaded.load()
         assert reloaded.decide(ACTION_WRITE, "C:/x/secret.txt") == "deny"
@@ -45,7 +45,7 @@ class TestRules:
 
 class TestEnsureAllowed:
     def test_default_allow_when_noninteractive_prompt(self, permissions, config):
-        # no renderer + default "prompt" resolves to allow in headless runs
+        # 无渲染器 + 默认 "prompt"：无头运行下解析为 allow
         assert ensure_allowed(permissions, None, config, ACTION_WRITE, "C:/x/y.txt") == "allow"
 
     def test_default_deny_raises(self, permissions):
@@ -55,8 +55,7 @@ class TestEnsureAllowed:
             ensure_allowed(permissions, None, config, ACTION_WRITE, "C:/x/y.txt")
 
     def test_noninteractive_renderer_falls_back_to_config_default(self, permissions):
-        """A renderer that is not interactive must not auto-allow; the config
-        default (deny) must apply instead."""
+        """非交互的渲染器不得自动放行；应套用配置默认值（deny）。"""
         config = Config()
         config.permissions.default_bash = "deny"
 
@@ -64,7 +63,7 @@ class TestEnsureAllowed:
             interactive = False
 
             def confirm_permission(self, action, target):  # pragma: no cover
-                raise AssertionError("should not prompt when non-interactive")
+                raise AssertionError("非交互时不应提示")
 
         with pytest.raises(PermissionDeniedError):
             ensure_allowed(permissions, NonInteractiveRenderer(), config, ACTION_BASH, "echo x")
@@ -86,7 +85,7 @@ class TestEnsureAllowed:
         renderer = Renderer()
         with pytest.raises(PermissionDeniedError):
             ensure_allowed(permissions, renderer, config, ACTION_WRITE, "C:/x/y.txt")
-        # the deny rule was remembered
+        # 拒绝规则被记住了
         assert permissions.decide(ACTION_WRITE, "C:/x/y.txt") == "deny"
 
     def test_allow_via_renderer(self, permissions, config):

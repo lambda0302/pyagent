@@ -1,4 +1,4 @@
-"""C1–C5: the six core tools each pass unit tests and behave on a real dir."""
+"""C1–C5：六个核心工具各自通过单元测试，并在真实目录下行为正确。"""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ class TestEditFile:
         )
         assert not result.ok
         assert "not found" in result.content
-        # file unchanged
+        # 文件保持不变
         assert "return 1" in (tool_ctx.cwd / "d.py").read_text(encoding="utf-8")
 
 
@@ -75,7 +75,7 @@ class TestGlobGrep:
         assert result.ok
         lines = result.content.splitlines()
         assert len(lines) == 2
-        assert all("/" in ln and ln.endswith(".py") for ln in lines)  # windows-safe path
+        assert all("/" in ln and ln.endswith(".py") for ln in lines)  # Windows 安全的路径
 
     def test_grep_finds_matches(self, tool_ctx, registry):
         (tool_ctx.cwd / "code.py").write_text("import os\ndef foo():\n    return os.name\n", encoding="utf-8")
@@ -99,7 +99,7 @@ class TestBash:
 
     def test_failure_reports_exit_code(self, tool_ctx, registry):
         result = _run(registry, "bash", {"command": "exit 3"}, tool_ctx)
-        assert result.ok  # tool itself succeeded in running
+        assert result.ok  # 工具本身成功运行
         assert "exit code 3" in result.content
 
 

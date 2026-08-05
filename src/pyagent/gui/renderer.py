@@ -1,11 +1,10 @@
-"""The GUI renderer: implements the renderer protocol for the desktop app.
+"""桌面应用的 GUI 渲染器：实现桌面应用的渲染器协议。
 
-Events are pushed onto a thread-safe ``queue.Queue`` that the SSE handler
-drains.  ``confirm_permission`` and ``show_diff`` push an event, register a
-pending request under a uuid, then **block** on a ``threading.Event`` until the
-HTTP layer resolves it (``POST /api/permission`` / ``POST /api/diff``).  A
-timeout guards against a disconnected client so a run degrades gracefully
-instead of hanging.
+事件被推入线程安全的 ``queue.Queue``，由 SSE 处理器排空。
+``confirm_permission`` 与 ``show_diff`` 先推一个事件、在 uuid 下注册一个
+挂起请求，然后**阻塞**在 ``threading.Event`` 上，直到 HTTP 层解析它
+（``POST /api/permission`` / ``POST /api/diff``）。超时兜底防止客户端断连
+时让运行挂死——而是优雅降级。
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ from pyagent.tools.registry import ToolResult
 
 
 class PendingRequest:
-    """A blocking confirmation waiting for a decision from the web UI."""
+    """等待 Web UI 决定的一个阻塞式确认。"""
 
     def __init__(self) -> None:
         self.event = threading.Event()
@@ -27,9 +26,9 @@ class PendingRequest:
 
 
 class GUIRenderer:
-    """Renderer that emits SSE events and blocks on user confirmations."""
+    """会发出 SSE 事件并在用户确认上阻塞的渲染器。"""
 
-    #: permissions.py only prompts when this is truthy — the GUI always prompts.
+    #: permissions.py 仅在该值为真时提示——GUI 总是提示。
     interactive = True
 
     def __init__(
@@ -43,7 +42,7 @@ class GUIRenderer:
         self.timeout = timeout
         self._lock = threading.Lock()
 
-    # -- protocol: non-blocking events ----------------------------------
+    # -- 协议：非阻塞事件 --------------------------------------------
     def on_assistant_delta(self, text: str) -> None:
         self.events.put({"type": "assistant_delta", "text": text})
 
@@ -58,7 +57,7 @@ class GUIRenderer:
     def on_final(self, content: str) -> None:
         self.events.put({"type": "final", "content": content})
 
-    # -- protocol: blocking confirmations -------------------------------
+    # -- 协议：阻塞式确认 --------------------------------------------
     def _block(self, payload: dict) -> Any:
         req_id = uuid.uuid4().hex
         req = PendingRequest()

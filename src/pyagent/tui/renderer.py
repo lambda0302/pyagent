@@ -1,7 +1,7 @@
-"""Rich-based interactive renderer for TUI mode.
+"""基于 rich 的 TUI 交互式渲染器。
 
-Implements the renderer protocol consumed by :class:`AgentLoop` and the tool
-layer: streaming deltas, tool status panels, diff previews, permission dialogs.
+实现 :class:`AgentLoop` 与工具层消费的渲染器协议：流式输出、工具状态面板、
+diff 预览、权限确认弹窗。
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ class TUIRenderer:
         self.console = console or Console()
         self.interactive = interactive
 
-    # -- assistant streaming ---------------------------------------------
+    # -- 助手消息流式输出 ---------------------------------------------
     def on_assistant_delta(self, text: str) -> None:
         sys.stdout.write(text)
         sys.stdout.flush()
@@ -32,7 +32,7 @@ class TUIRenderer:
         self.console.print()
         self.console.print(Panel(Text(content, style="green"), title="[b]pyagent[/b]", border_style="green"))
 
-    # -- tool status -------------------------------------------------------
+    # -- 工具状态 ------------------------------------------------------
     def on_tool_start(self, name: str, preview: str) -> None:
         self.console.print(
             Panel(
@@ -49,7 +49,7 @@ class TUIRenderer:
             label = Text(f"✗ {result.name} failed: {result.content}", style="red")
         self.console.print(label)
 
-    # -- diff preview ------------------------------------------------------
+    # -- diff 预览 ------------------------------------------------------
     def show_diff(self, path: str, diff: str) -> bool:
         if not self.interactive:
             return True
@@ -57,7 +57,7 @@ class TUIRenderer:
         self.console.print(Syntax(diff, "diff", theme="ansi_dark"))
         return prompts.ask_confirm("Apply this change?", default=False, interactive=True)
 
-    # -- permission --------------------------------------------------------
+    # -- 权限确认 --------------------------------------------------------
     def confirm_permission(self, action: str, target: str) -> tuple[str, bool]:
         if not self.interactive:
             return "allow", False

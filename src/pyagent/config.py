@@ -1,9 +1,8 @@
-"""TOML configuration loading and validation.
+"""TOML 配置加载与校验。
 
-The config file lives at ``~/.pyagent/config.toml`` (or the path given by
-``--config``).  A missing file is fine — sensible defaults are used and the
-default path is echoed on startup.  An *invalid* file (unparsable TOML or
-unknown/ill-typed keys) raises a clear error instead of silently degrading.
+配置文件位于 ``~/.pyagent/config.toml``（或 ``--config`` 指定的路径）。文件缺失
+没关系——会使用合理的默认值；*非法*文件（无法解析的 TOML 或未知/类型错误的
+键）会抛出明确错误，而不是静默降级。
 """
 
 from __future__ import annotations
@@ -14,13 +13,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-#: Default config location, overridable via ``PYAGENT_CONFIG`` or ``--config``.
+#: 默认配置位置，可用 ``PYAGENT_CONFIG`` 或 ``--config`` 覆盖。
 DEFAULT_CONFIG_PATH = Path.home() / ".pyagent" / "config.toml"
 
-#: Default directory for saved sessions.
+#: 已保存会话的默认目录。
 DEFAULT_SESSION_DIR = Path.home() / ".pyagent" / "sessions"
 
-#: Keys that must exist with the right types.  Nested paths use ``/``.
+#: 必须存在且类型正确的键。嵌套路径用 ``/`` 表示。
 _REQUIRED_TYPES: dict[str, type] = {
     "model/base_url": str,
     "model/model": str,
@@ -38,12 +37,12 @@ _ALLOWED_TOP = {"model", "permissions", "session", "tools"}
 
 
 class ConfigError(Exception):
-    """Raised when the configuration file is missing or invalid."""
+    """配置文件缺失或非法时抛出。"""
 
 
 @dataclass
 class Config:
-    """Resolved application configuration."""
+    """解析后的应用配置。"""
 
     model: ModelConfig = field(default_factory=lambda: ModelConfig())
     permissions: PermissionConfig = field(default_factory=lambda: PermissionConfig())
@@ -64,12 +63,12 @@ class ModelConfig:
     base_url: str = "https://api.openai.com/v1"
     model: str = "gpt-4o-mini"
     api_key_env: str = "OPENAI_API_KEY"
-    api_key: str = ""  # optional literal key; takes precedence over the env var
+    api_key: str = ""  # 可选的字面 key；优先级高于环境变量
     max_turns: int = 20
     timeout: int = 300
 
     def resolve_api_key(self) -> str | None:
-        """Return the literal key if set, else read from the env var."""
+        """若设置了字面 key 则返回它，否则从环境变量读取。"""
         if self.api_key:
             return self.api_key
         return os.environ.get(self.api_key_env)
@@ -97,11 +96,11 @@ def _resolve_path(path: str) -> str:
 
 
 def load_config(path: str | Path | None = None) -> Config:
-    """Load and validate configuration.
+    """加载并校验配置。
 
     Args:
-        path: Explicit config file path.  ``None`` uses ``PYAGENT_CONFIG`` then
-            the default location.  If neither exists, defaults are returned.
+        path: 显式的配置文件路径。``None`` 依次使用 ``PYAGENT_CONFIG`` 和默认
+            位置。若都不存在，返回默认值。
     """
     cfg_path = _find_config_path(path)
     if cfg_path is None:

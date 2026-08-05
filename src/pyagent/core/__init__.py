@@ -1,1 +1,1 @@
-"""Core agent loop, model layer, message store and context management."""
+"""核心 agent 循环、模型层、消息存储与上下文管理。"""

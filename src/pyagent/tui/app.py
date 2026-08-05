@@ -1,4 +1,4 @@
-"""The interactive TUI: prompt loop, slash commands, session lifecycle."""
+"""交互式 TUI：提示循环、斜杠命令、会话生命周期。"""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class PyAgentApp:
         self.session_dir = Path(session_dir)
         self.renderer = loop.renderer or TUIRenderer()
         self.console = console or Console()
-        self._prompt = None  # lazily created prompt_toolkit session, or None
+        self._prompt = None  # 延迟创建的 prompt_toolkit 会话；不可用则为 None
 
     def run(self) -> None:
         self.console.print(_BANNER)
@@ -63,22 +63,21 @@ class PyAgentApp:
             )
 
     def _get_input(self) -> str:
-        """Read one line of user input.
+        """读取一行用户输入。
 
-        Uses prompt_toolkit when a Windows console is available; falls back to
-        plain ``input()`` otherwise (pipes, non-console terminals, tests) so the
-        TUI never crashes just because there is no interactive console.
+        有 Windows 控制台时用 prompt_toolkit；否则（管道、非控制台终端、
+        测试）回退到普通 ``input()``，这样 TUI 不会因为没有交互控制台而崩溃。
         """
         if self._prompt is None:
             self._prompt = _try_create_prompt_session()
         if self._prompt is not None:
             try:
                 return self._prompt.prompt("pyagent> ")
-            except Exception:  # noqa: BLE001 - fall back on any prompt_toolkit failure
+            except Exception:  # noqa: BLE001 - 任何 prompt_toolkit 失败都回退
                 self._prompt = None
         return input("pyagent> ")
 
-    # -- command dispatch --------------------------------------------------
+    # -- 命令分发 ------------------------------------------------------
     def _dispatch(self, text: str) -> bool:
         if text.startswith("/"):
             return self._slash(text)
@@ -111,14 +110,14 @@ class PyAgentApp:
             self.loop.run(prompt=prompt)
         except KeyboardInterrupt:
             self.console.print("\n(task interrupted)")
-        except Exception as exc:  # noqa: BLE001 - surface, never crash the TUI
+        except Exception as exc:  # noqa: BLE001 - 报错即可，绝不让 TUI 崩溃
             self.console.print(f"[red]error:[/red] {exc}")
         self._save_session()
 
     def _save_session(self) -> None:
         try:
             self.session.save(self.session_dir)
-        except Exception as exc:  # noqa: BLE001 - never let a save failure kill the TUI
+        except Exception as exc:  # noqa: BLE001 - 保存失败不应终止 TUI
             self.console.print(f"[red]failed to save session:[/red] {exc}")
 
     def _list_sessions(self) -> None:
@@ -155,19 +154,18 @@ class PyAgentApp:
 
 
 def _try_create_prompt_session():
-    """Create a prompt_toolkit PromptSession, or None when unavailable."""
+    """创建一个 prompt_toolkit PromptSession；不可用时返回 None。"""
     try:
         from prompt_toolkit import PromptSession
 
         return PromptSession()
-    except Exception:  # noqa: BLE001 - no console output available
+    except Exception:  # noqa: BLE001 - 没有可用的控制台输出
         return None
 
 
 def make_app(config: Config, session_dir: Path) -> PyAgentApp:
-    """Build the default TUI app wiring (used by the CLI)."""
+    """构建默认的 TUI 应用装配（供 CLI 使用）。"""
     from pyagent.core.context import ContextManager
-    from pyagent.core.messages import Session
     from pyagent.core.model import OpenAILLMClient
     from pyagent.tools.permissions import PermissionManager
     from pyagent.tools.registry import build_default_registry

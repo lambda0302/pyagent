@@ -1,15 +1,14 @@
-"""Local HTTP + SSE server that powers the desktop GUI.
+"""为桌面 GUI 提供动力的本地 HTTP + SSE 服务。
 
-Owns all cross-thread state (event queue, pending confirmations, the active
-session/loop, the run guard) and serves:
+持有全部跨线程共享状态（事件队列、挂起确认、活跃会话/循环、运行锁），并负责：
 
-- the static frontend (``index.html`` / ``app.js`` / ``style.css``),
-- a long-lived SSE stream (``/api/stream``) that replays the current transcript
-  on connect and then streams live events,
-- small JSON endpoints for chat, permission/diff decisions, sessions and resume.
+- 提供静态前端（``index.html`` / ``app.js`` / ``style.css``），
+- 一个长连接 SSE 流（``/api/stream``）：连接时先回放当前对话记录，之后持续
+  推送实时事件，
+- 若干小 JSON 端点：聊天、权限/diff 决定、会话与恢复。
 
-The agent loop runs on a background thread; ``GUIRenderer`` pushes events onto
-the queue and blocks on pending confirmations which the HTTP endpoints resolve.
+agent 循环运行在后台线程；``GUIRenderer`` 把事件推入队列，并阻塞在挂起确认
+上，由 HTTP 端点解除。
 """
 
 from __future__ import annotations
@@ -37,7 +36,7 @@ _HEARTBEAT_SECONDS = 15.0
 
 
 class GuiServer:
-    """The local web server and the agent runtime behind the GUI."""
+    """GUI 背后的本地 Web 服务与 agent 运行时。"""
 
     def __init__(
         self,
@@ -71,7 +70,7 @@ class GuiServer:
         self._httpd: ThreadingHTTPServer = self._make_httpd(port)
         self.port: int = self._httpd.server_address[1]
 
-    # -- runtime wiring ---------------------------------------------------
+    # -- 运行时装配 ---------------------------------------------------
     def _build_loop(self) -> AgentLoop:
         if self.llm is None:
             self.llm = OpenAILLMClient(self.config.model, self.registry.openai_schemas())
@@ -90,12 +89,12 @@ class GuiServer:
         self.session = session
         self.loop.session = session
 
-    # -- server lifecycle --------------------------------------------------
+    # -- 服务生命周期 --------------------------------------------------
     def serve_forever(self) -> None:
         self._httpd.serve_forever()
 
     def shutdown(self) -> None:
-        """Stop the SSE stream and the HTTP server (call from a non-serve thread)."""
+        """停止 SSE 流与 HTTP 服务（须从非 serve 线程调用）。"""
         self._sse_stop.set()
         for handler in list(self._sse_handlers):
             try:
@@ -104,7 +103,7 @@ class GuiServer:
                 pass
         try:
             self._httpd.shutdown()
-        except Exception:  # noqa: BLE001 - already shutting down
+        except Exception:  # noqa: BLE001 - 已在关闭中
             pass
         try:
             self._httpd.server_close()
@@ -118,7 +117,7 @@ class GuiServer:
             protocol_version = "HTTP/1.1"
             server_version = "pyagent-gui"
 
-            def log_message(self, *args) -> None:  # noqa: ARG002 - silence request logging
+            def log_message(self, *args) -> None:  # noqa: ARG002 - 静默请求日志
                 pass
 
             def do_GET(self) -> None:
@@ -129,7 +128,7 @@ class GuiServer:
 
         return ThreadingHTTPServer(("127.0.0.1", port), _Handler)
 
-    # -- GET routing --------------------------------------------------------
+    # -- GET 路由 --------------------------------------------------------
     def _handle_get(self, handler: BaseHTTPRequestHandler) -> None:
         path = urlparse(handler.path).path
         if path in ("/", "/index.html"):
@@ -192,7 +191,7 @@ class GuiServer:
                     continue
                 self._send_sse(handler, payload)
         except (BrokenPipeError, ConnectionResetError, OSError):
-            pass  # client disconnected
+            pass  # 客户端断连
         finally:
             if handler in self._sse_handlers:
                 self._sse_handlers.remove(handler)
@@ -205,7 +204,7 @@ class GuiServer:
         handler.wfile.write(frame.encode("utf-8"))
         handler.wfile.flush()
 
-    # -- POST routing ---------------------------------------------------------
+    # -- POST 路由 ---------------------------------------------------------
     def _handle_post(self, handler: BaseHTTPRequestHandler) -> None:
         length = int(handler.headers.get("Content-Length", 0))
         raw = handler.rfile.read(length) if length else b"{}"
@@ -250,12 +249,12 @@ class GuiServer:
             self.loop.run(prompt=prompt)
         except ModelError as exc:
             self.events.put({"type": "error", "message": str(exc)})
-        except Exception as exc:  # noqa: BLE001 - surface any unexpected failure
+        except Exception as exc:  # noqa: BLE001 - 兜底暴露任何意外失败
             self.events.put({"type": "error", "message": repr(exc)})
         finally:
             try:
                 self.session.save(self.session_dir)
-            except Exception:  # noqa: BLE001 - session save is best-effort
+            except Exception:  # noqa: BLE001 - 会话保存是尽力而为
                 pass
             self.events.put(
                 {"type": "run_end", "session_id": self.session.session_id, "saved": True}
@@ -307,7 +306,7 @@ class GuiServer:
         self._set_session(Session(session_id=new_session_id()))
         self._send_json(handler, 200, {"ok": True, "session_id": self.session.session_id})
 
-    # -- response helpers ----------------------------------------------------
+    # -- 响应辅助 ------------------------------------------------------------
     def _send_bytes(self, handler: BaseHTTPRequestHandler, status: int, body: bytes, content_type: str) -> None:
         handler.send_response(status)
         handler.send_header("Content-Type", content_type)

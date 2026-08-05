@@ -1,7 +1,7 @@
-"""Tool registry: name → (schema, callable) with execution and error mapping.
+"""工具注册表：name → (schema, callable)，含执行与错误映射。
 
-The registry is the seam v2 uses to add MCP tools: any callable plus a JSON
-schema can be registered and will flow to the model automatically.
+注册表是 v2 接入 MCP 工具的接缝：任何 callable 加一个 JSON schema 即可注册，
+并自动进入模型可见的工具列表。
 """
 
 from __future__ import annotations
@@ -15,22 +15,22 @@ from typing import Any
 from pyagent.config import Config
 from pyagent.tools.permissions import PermissionDeniedError, PermissionManager
 
-#: Signature: (arguments: dict, ctx: ToolContext) -> str
+#: 工具签名：(arguments: dict, ctx: ToolContext) -> str
 ToolHandler = Callable[[dict[str, Any], "ToolContext"], str]
 
 
 class ToolError(Exception):
-    """Recoverable tool failure — the message goes back to the model."""
+    """可恢复的工具失败——错误消息会回给模型。"""
 
 
 @dataclass
 class ToolContext:
-    """Everything a tool needs at execution time."""
+    """工具执行时所需的一切。"""
 
     cwd: Path
     config: Config
     permissions: PermissionManager
-    renderer: Any = None  # optional TUI renderer (confirm_permission / show_diff)
+    renderer: Any = None  # 可选的渲染器（confirm_permission / show_diff）
 
     def resolve(self, path: str) -> Path:
         p = Path(path)
@@ -117,14 +117,14 @@ class ToolRegistry:
             return ToolResult(name=name, ok=False, content=f"Error: {exc}")
         except ToolError as exc:
             return ToolResult(name=name, ok=False, content=f"Error: {exc}")
-        except Exception as exc:  # noqa: BLE001 - boundary maps any failure to a message
+        except Exception as exc:  # noqa: BLE001 - 边界处把任何失败映射成消息
             return ToolResult(name=name, ok=False, content=f"Error: {name} failed: {exc!r}")
 
 
-# -- default toolset -------------------------------------------------------
+# -- 默认工具集 -------------------------------------------------------
 
 def build_default_registry() -> ToolRegistry:
-    """Build the registry with the six core v1 tools."""
+    """构建带 v1 六个核心工具的注册表。"""
     from pyagent.tools import files, shell
 
     registry = ToolRegistry()

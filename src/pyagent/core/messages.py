@@ -1,8 +1,7 @@
-"""Session history: message assembly, saving, loading, resuming.
+"""会话历史：消息组装、保存、加载、恢复。
 
-Sessions are stored as one JSON file per session id inside the configured
-session directory.  The in-memory history is an OpenAI-style message list,
-so it can be passed straight to the LLM client.
+会话以「一个会话一个 JSON 文件」的形式存放在配置的会话目录下。内存中的历史
+是 OpenAI 风格的消息列表，可直接传给 LLM 客户端。
 """
 
 from __future__ import annotations
@@ -16,7 +15,7 @@ from pathlib import Path
 
 @dataclass
 class Session:
-    """A chat session with its persisted history."""
+    """带持久化历史的一个聊天会话。"""
 
     session_id: str
     messages: list[dict] = field(default_factory=list)
@@ -24,9 +23,9 @@ class Session:
     updated_at: str = field(default_factory=lambda: _now())
     title: str = "untitled"
 
-    # -- persistence -----------------------------------------------------
+    # -- 持久化 -----------------------------------------------------
     def save(self, session_dir: str | Path) -> Path:
-        """Write this session to ``session_dir/<id>.json`` and return the path."""
+        """把会话写入 ``session_dir/<id>.json`` 并返回路径。"""
         directory = Path(session_dir)
         directory.mkdir(parents=True, exist_ok=True)
         self.updated_at = _now()
@@ -44,7 +43,7 @@ class Session:
 
     @classmethod
     def load(cls, session_dir: str | Path, session_id: str) -> Session:
-        """Load a session by id.  Raises ``FileNotFoundError`` if absent."""
+        """按 id 加载会话；不存在时抛出 ``FileNotFoundError``。"""
         path = Path(session_dir) / f"{session_id}.json"
         with open(path, encoding="utf-8") as fh:
             payload = json.load(fh)
@@ -56,7 +55,7 @@ class Session:
             title=payload.get("title", "untitled"),
         )
 
-    # -- message assembly -------------------------------------------------
+    # -- 消息组装 ---------------------------------------------------
     def append_user(self, text: str) -> None:
         self.messages.append({"role": "user", "content": _clean(text)})
 
@@ -77,17 +76,17 @@ class Session:
         )
 
     def set_system(self, system_prompt: str) -> None:
-        """Ensure the first message is the system prompt (dedupe on resume)."""
+        """确保第一条消息是系统提示词（恢复会话时去重）。"""
         if self.messages and self.messages[0].get("role") == "system":
             self.messages[0] = {"role": "system", "content": system_prompt}
         else:
             self.messages.insert(0, {"role": "system", "content": system_prompt})
 
     def set_summary(self, summary: str) -> None:
-        """Replace/insert a running context summary right after the system message."""
+        """在系统消息之后替换/插入一条滚动上下文摘要。"""
         summary_msg = {"role": "system", "content": f"[context summary of earlier turns]\n{summary}"}
         if self.messages and self.messages[0].get("role") == "system":
-            # drop an existing summary slot, then re-insert the new one
+            # 丢弃旧的摘要槽位，再插入新的
             self.messages = [m for m in self.messages if not m.get("_summary")]
             self.messages.insert(1, summary_msg | {"_summary": True})
         else:
@@ -95,7 +94,7 @@ class Session:
 
 
 def _clean(obj: object):
-    """Recursively replace lone surrogates with U+FFFD (JSON-safety net)."""
+    """递归地把孤立的代理字符替换成 U+FFFD（JSON 安全网）。"""
     if isinstance(obj, str):
         return obj.encode("utf-8", errors="replace").decode("utf-8")
     if isinstance(obj, dict):
@@ -114,7 +113,7 @@ def new_session_id() -> str:
 
 
 def list_sessions(session_dir: str | Path) -> list[dict]:
-    """Return metadata for all saved sessions, newest first."""
+    """返回所有已保存会话的元数据，最新的在前。"""
     directory = Path(session_dir)
     if not directory.exists():
         return []

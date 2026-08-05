@@ -1,9 +1,8 @@
-"""Desktop GUI layer: renderer, local HTTP+SSE server, launcher and frontend.
+"""桌面 GUI 层：渲染器、本地 HTTP+SSE 服务、启动器与前端。
 
-The GUI reuses all of ``core/`` and ``tools/`` unchanged.  It only adds a new
-implementation of the renderer protocol (:class:`GUIRenderer`) that pushes
-events to the browser over SSE and blocks on user decisions (permissions and
-diff confirmations), resolved through small HTTP endpoints.
+GUI 原样复用全部 ``core/`` 与 ``tools/``。它只新增一个渲染器协议的新实现
+(:class:`GUIRenderer`)：把事件通过 SSE 推给浏览器，并阻塞等待用户的决定
+（权限与 diff 确认），由几个小 HTTP 端点解除阻塞。
 """
 
 from pyagent.gui.app import run_gui

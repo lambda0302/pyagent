@@ -1,9 +1,8 @@
-"""Context window management: compress long histories via summarisation.
+"""上下文窗口管理：通过摘要压缩过长的历史。
 
-Mirrors the "TurnMemory" idea from keen-code: instead of letting the history
-grow without bound, older turns are folded into a running summary that is
-injected as a system message.  The summary preserves goal-relevant facts
-(task, file paths, decisions, blockers) so the model can keep working.
+借鉴 keen-code 的 "TurnMemory" 思路：不再让历史无限增长，而是把较早的轮次
+折叠进一条滚动摘要，以系统消息的形式注入。摘要保留与目标相关的关键信息
+（任务、文件路径、决策、阻塞点），让模型能继续工作。
 """
 
 from __future__ import annotations
@@ -13,10 +12,10 @@ from dataclasses import dataclass
 
 from pyagent.core.model import LLMClient, LLMResponse
 
-#: Rough upper bound on a serialised history before we compress.
+#: 序列化历史超过该字节数时触发压缩。
 DEFAULT_MAX_HISTORY_CHARS = 40_000
 
-#: Always keep at least this many trailing messages (the active exchange).
+#: 始终保留的消息条数下限（当前活跃的交流）。
 _MIN_KEEP_MESSAGES = 6
 
 _SUMMARISE_PROMPT = (
@@ -30,7 +29,7 @@ _SUMMARISE_PROMPT = (
 
 @dataclass
 class ContextManager:
-    """Compresses ``Session`` history when it grows past a size threshold."""
+    """当 ``Session`` 历史超过大小阈值时对其进行压缩。"""
 
     llm: LLMClient
     max_history_chars: int = DEFAULT_MAX_HISTORY_CHARS
@@ -41,16 +40,15 @@ class ContextManager:
         return total > self.max_history_chars
 
     def compress(self, messages: list[dict]) -> list[dict]:
-        """Fold older messages into a summary; return the new message list.
+        """把较早的消息折叠进摘要；返回新的消息列表。
 
-        The summary is produced by the configured LLM (the only piece that
-        needs real inference), so in tests a mock client can verify the flow.
+        摘要是由配置的 LLM 生成的（唯一需要真实推理的部分），因此测试中
+        可以用 mock 客户端验证整个流程。
         """
         if len(messages) <= self.min_keep:
             return messages
 
-        # Split: system (+existing summary) stays; the tail stays verbatim;
-        # the middle is summarised.
+        # 拆分：system（+已有的摘要）保留；尾部原样保留；中间部分被摘要。
         head: list[dict] = []
         body: list[dict] = []
         tail: list[dict] = messages[-self.min_keep :]
@@ -59,7 +57,7 @@ class ContextManager:
         if messages and messages[0].get("role") == "system":
             head.append(messages[0])
             idx = 1
-            # carry over any previous summary message
+            # 顺带带上之前已有的摘要消息
             if idx < len(messages) and messages[idx].get("_summary"):
                 head.append(messages[idx])
                 idx += 1
@@ -70,7 +68,7 @@ class ContextManager:
 
         summary = self._summarise(body)
 
-        # Rebuild: head (system + old summary) ... new summary ... tail.
+        # 重建：head（system + 旧摘要）... 新摘要 ... 尾部。
         kept_head = [m for m in head if not m.get("_summary")]
         result: list[dict] = kept_head
         if summary:
@@ -93,5 +91,5 @@ class ContextManager:
             )
             return (response.content or "").strip()
         except Exception:
-            # Summarisation is best-effort: never crash the loop over it.
+            # 摘要是尽力而为的：绝不能让它在循环中导致崩溃。
             return ""

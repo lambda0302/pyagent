@@ -1,4 +1,4 @@
-"""Shared fixtures: mock LLM client, tool registry, tool context."""
+"""共享夹具：mock LLM 客户端、工具注册表、工具上下文。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pyagent.tools.registry import ToolContext, ToolRegistry, build_default_regi
 
 
 class MockLLMClient(LLMClient):
-    """Scripted model: returns responses from a queue, recording every call."""
+    """按脚本出响应的模型：从队列返回响应，并记录每次调用。"""
 
     def __init__(self, script: list[LLMResponse]):
         self.script = list(script)

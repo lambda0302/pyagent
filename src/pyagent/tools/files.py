@@ -1,9 +1,8 @@
-"""File tools: read_file / write_file / edit_file / glob / grep.
+"""文件工具：read_file / write_file / edit_file / glob / grep。
 
-Write operations (write_file, edit_file) go through the permission system.
-``edit_file`` follows "generate patch → preview diff → confirm → apply": when
-a renderer is present the diff is shown for approval before anything is
-written; headless runs apply immediately.
+写操作（write_file、edit_file）都要经过权限系统。``edit_file`` 遵循「生成补丁 →
+预览 diff → 确认 → 应用」：存在渲染器时先展示 diff 供批准再写盘；无头运行则
+直接应用。
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from pathlib import Path
 from pyagent.tools.permissions import ACTION_WRITE, ensure_allowed
 from pyagent.tools.registry import ToolContext, ToolError
 
-#: Upper bound on bytes returned by read_file / shown in a grep hit.
+#: read_file 返回 / grep 命中展示的最大字符数上限。
 MAX_READ_CHARS = 60_000
 MAX_GREP_HITS = 200
 MAX_GREP_LINE_CHARS = 500
@@ -56,7 +55,7 @@ def write_file(args: dict, ctx: ToolContext) -> str:
         ctx.permissions, ctx.renderer, ctx.config, ACTION_WRITE, str(full),
         remember_hint=str(full),
     )
-    # Convention (documented in README): parent directories are created.
+    # 约定（README 有说明）：自动创建父目录。
     full.parent.mkdir(parents=True, exist_ok=True)
     try:
         full.write_text(str(content), encoding="utf-8")
@@ -105,18 +104,12 @@ def glob(args: dict, ctx: ToolContext) -> str:
         raise ToolError("glob: missing required argument 'pattern'")
     pattern = str(pattern).replace("\\", "/")
     base = ctx.cwd
-    search_root: Path
+    search_root: Path = base
     rel_pattern = pattern
-    if "**" in pattern or "/" not in pattern:
-        search_root = base
-    else:
-        # Pattern may include a leading directory that is itself a glob; keep it
-        # simple and search from cwd with the full relative pattern.
-        search_root = base
 
     try:
         if rel_pattern.startswith("/") or ":" in rel_pattern:
-            # treat as absolute-ish: fall back to cwd-relative with leading slash trimmed
+            # 视为近似绝对路径：去掉前导斜杠后退回相对 cwd
             rel_pattern = rel_pattern.lstrip("/")
         matches = sorted(search_root.glob(rel_pattern))
     except (ValueError, OSError) as exc:
@@ -162,10 +155,10 @@ def grep(args: dict, ctx: ToolContext) -> str:
     return "\n".join(hits)
 
 
-# -- helpers --------------------------------------------------------------
+# -- 辅助 --------------------------------------------------------------
 
 def _mismatch_error(path: str, old: str, content: str) -> str:
-    """A diagnostic when edit_file's old_string is not found."""
+    """edit_file 的 old_string 未找到时给出的诊断信息。"""
     lines = content.splitlines()
     clue = ""
     sample = old.strip()

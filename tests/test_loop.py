@@ -1,4 +1,4 @@
-"""B1: agent loop logic under a mock model.  B3: context compression."""
+"""B1：mock 模型下的 agent 循环逻辑。B3：上下文压缩。"""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _tool_response(name="write_file", arguments=None) -> LLMResponse:
 
 class TestLoopToolUse:
     def test_tool_call_executed_then_model_requeried(self, tmp_path):
-        """① model requests a tool → tool executes → result fed back → model called again."""
+        """① 模型请求工具 → 正确执行并回填结果 → 再次调用模型。"""
         llm = MockLLMClient(
             [
                 _tool_response(),
@@ -47,18 +47,18 @@ class TestLoopToolUse:
 
         assert result == "File created."
         assert (tmp_path / "hello.txt").read_text(encoding="utf-8") == "hello agent"
-        # model called twice; second call carries the tool result message
+        # 模型被调用了两次；第二次调用携带工具结果消息
         assert llm.calls_count == 2
         second_messages = llm.calls[1][0]
         tool_msgs = [m for m in second_messages if m["role"] == "tool"]
         assert tool_msgs and tool_msgs[0]["name"] == "write_file"
         assert "hello.txt" in tool_msgs[0]["content"]
-        # the assistant tool_calls request is present in history for the API
+        # 历史中包含供 API 使用的助手 tool_calls 请求
         assistant_msgs = [m for m in second_messages if m["role"] == "assistant"]
         assert any("tool_calls" in m for m in assistant_msgs)
 
     def test_direct_reply_terminates(self, tmp_path):
-        """② model replies with text → loop terminates after one call."""
+        """② 模型直接回复文本 → 一次调用后循环终止。"""
         llm = MockLLMClient([LLMResponse(content="hi")])
         loop = _make_loop(llm, Config(), tmp_path)
         result = loop.run(prompt="say hi")
@@ -66,7 +66,7 @@ class TestLoopToolUse:
         assert llm.calls_count == 1
 
     def test_max_turns_terminates(self, tmp_path):
-        """③ model never gives a final answer → loop stops at max_turns."""
+        """③ 模型始终不给最终答复 → 在 max_turns 处终止。"""
         config = Config()
         config.model.max_turns = 2
         llm = MockLLMClient([_tool_response(), _tool_response()])
@@ -76,7 +76,7 @@ class TestLoopToolUse:
         assert llm.calls_count == 2
 
     def test_tool_error_is_fed_back_to_model(self, tmp_path):
-        """A failing tool returns an error message the model can read."""
+        """失败的工具有模型可读到的错误消息。"""
         bad = _tool_response(name="read_file", arguments=json.dumps({"path": "nope.txt"}))
         llm = MockLLMClient([bad, LLMResponse(content="The file does not exist.")])
         loop = _make_loop(llm, Config(), tmp_path)
@@ -109,14 +109,14 @@ class TestContextCompression:
         compressed = mgr.compress(messages)
 
         assert len(compressed) < len(messages)
-        # key info survives in the summary
+        # 关键信息保留在摘要中
         summary = [m for m in compressed if m.get("_summary")][0]
         assert "fix bug in module 0" in summary["content"]
-        # system prompt stays first
+        # 系统提示词保持在最前
         assert compressed[0]["role"] == "system"
-        # tail (active exchange) preserved verbatim
-        assert compressed[-len(messages[-6 :]) :] == messages[-6:]
-        # the summary LLM was invoked for summarisation
+        # 尾部（活跃交流）原样保留
+        assert compressed[-len(messages[-6:]) :] == messages[-6:]
+        # 摘要 LLM 被调用了一次
         assert llm.calls_count == 1
 
     def test_short_history_is_not_touched(self):
@@ -125,11 +125,11 @@ class TestContextCompression:
         assert mgr.compress(messages) == messages
 
     def test_loop_still_works_with_compression_enabled(self, tmp_path):
-        """B3: after compression the loop keeps calling the model normally."""
+        """B3：压缩后循环仍正常调用模型。"""
         config = Config()
         llm = MockLLMClient([LLMResponse(content="final answer after compression")])
         loop = _make_loop(llm, config, tmp_path)
-        # force compression on the very first call
+        # 强制在第一次调用时压缩
         loop.context = ContextManager(llm=llm, max_history_chars=0, min_keep=1)
         loop.run(prompt="tell me something")
         assert llm.calls_count >= 1

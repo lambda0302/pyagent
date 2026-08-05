@@ -1,7 +1,7 @@
-"""Desktop GUI tests — headless, no pywebview or display required.
+"""桌面 GUI 测试——无头运行，无需 pywebview 或显示器。
 
-Covers the GUIRenderer (event emission + blocking confirmations) and the
-GuiServer (HTTP endpoints + SSE streaming + permission resolution E2E).
+覆盖 GUIRenderer（事件发射 + 阻塞确认）与 GuiServer（HTTP 端点 + SSE 流 +
+权限解析 E2E）。
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def _tool_response(name="write_file", arguments=None) -> LLMResponse:
 
 
 def _make_responder(events, pending, records, allow=True):
-    """Drain events, auto-resolve permission/diff blocks, record everything."""
+    """排空事件，自动解析权限/diff 阻塞，并记录所有事件。"""
 
     def run():
         while True:
@@ -58,7 +58,7 @@ def _make_responder(events, pending, records, allow=True):
 
 
 # ---------------------------------------------------------------------------
-# Renderer unit tests
+# 渲染器单元测试
 # ---------------------------------------------------------------------------
 
 
@@ -110,7 +110,7 @@ class TestRenderer:
         pending[msg["id"]].event.set()
         t.join(timeout=5)
         assert outcome["result"] == ("deny", False)
-        assert not pending  # cleaned up
+        assert not pending  # 已清理
 
     def test_show_diff_blocks_and_resolves(self):
         events: queue.Queue = queue.Queue()
@@ -149,8 +149,8 @@ class TestRenderer:
         assert not renderer.pending
 
     def test_full_loop_permission_gate(self, tmp_path):
-        """The whole block/unblock path: a write_file tool call is gated behind
-        the GUI permission decision and only lands when allowed."""
+        """完整阻塞/解除路径：write_file 工具调用被 GUI 权限决定所拦截，
+        只有在允许后才真正落盘。"""
         events: queue.Queue = queue.Queue()
         pending = {}
         renderer = GUIRenderer(events, pending)
@@ -175,7 +175,7 @@ class TestRenderer:
 
 
 # ---------------------------------------------------------------------------
-# Server integration tests (urllib)
+# 服务端集成测试（urllib）
 # ---------------------------------------------------------------------------
 
 
@@ -194,7 +194,7 @@ def _start_server(tmp_path: Path, llm):
 
 
 def _request(base: str, path: str, data: dict | None = None) -> tuple[int, dict]:
-    """Return (status, parsed-json-body), tolerating non-2xx responses."""
+    """返回 (status, 解析后的 JSON)，容忍非 2xx 响应。"""
     if data is None:
         req = urllib.request.Request(f"{base}{path}")
     else:
@@ -252,7 +252,7 @@ class TestServer:
         _, new = _post(base, "/api/new", {})
         assert new["ok"] and new["session_id"]
 
-        # run a quick chat so the session gets persisted with history
+        # 跑一次快速问答，让会话带上历史并落盘
         _, chat = _post(base, "/api/chat", {"prompt": "hi"})
         assert chat["ok"]
 
@@ -286,7 +286,7 @@ class TestServer:
 
         reader = threading.Thread(target=read_stream, daemon=True)
         reader.start()
-        time.sleep(0.3)  # let the SSE connection establish
+        time.sleep(0.3)  # 等待 SSE 连接建立
         _, chat = _post(base, "/api/chat", {"prompt": "create hello.txt"})
         assert chat["ok"]
         reader.join(timeout=30)
@@ -299,8 +299,8 @@ class TestServer:
         assert (s.cwd / "hello.txt").read_text(encoding="utf-8") == "hello agent"
 
     def test_chat_rejects_concurrent_run(self, server):
-        # The write tool will block on a permission that nobody resolves, so the
-        # first run stays in flight long enough for the second POST to collide.
+        # 写工具会阻塞在一个无人解析的权限上，因此第一次运行保持进行中，
+        # 足以让第二次 POST 撞上并发检查。
         s = server(MockLLMClient([_tool_response(), LLMResponse(content="done")]))
         base = f"http://127.0.0.1:{s.port}"
 
@@ -310,14 +310,14 @@ class TestServer:
         status, second = _post(base, "/api/chat", {"prompt": "again"})
         assert status == 409 and second["ok"] is False
 
-        # resolve the pending permission so the daemon agent thread can finish
+        # 解析挂起的权限，让后台 daemon agent 线程能结束
         while True:
             msg = s.events.get(timeout=5)
             if msg.get("type") == "permission":
                 break
         s.pending[msg["id"]].result = {"decision": "allow", "remember": False}
         s.pending[msg["id"]].event.set()
-        # the write happens on the (async) agent thread — poll for it
+        # 写入发生在（异步的）agent 线程上——轮询等待文件出现
         target = s.cwd / "hello.txt"
         deadline = time.time() + 10
         while time.time() < deadline and not target.exists():

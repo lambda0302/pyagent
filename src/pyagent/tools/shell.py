@@ -1,8 +1,7 @@
-"""bash tool: run a shell command on the host and return its output.
+"""bash 工具：在宿主机上运行 Shell 命令并返回输出。
 
-v1 runs commands directly on the host (no sandbox — that is a stated non-goal)
-and relies on the permission system as the safety net.  The tool is gated by
-the ``bash`` permission; a remembered rule is keyed on the command prefix.
+v1 直接在本机执行命令（不做沙箱——这是明确列出的非目标），用权限系统作为
+安全兜底。工具受 ``bash`` 权限管控；记忆的规则以命令前缀为键。
 """
 
 from __future__ import annotations
@@ -55,7 +54,7 @@ def bash(args: dict, ctx: ToolContext) -> str:
 
 
 def _command_prefix(command: str) -> str:
-    """First whitespace-separated token, quotes stripped, lowercase."""
+    """取第一个空白分隔的 token，去掉引号，转小写。"""
     try:
         tokens = shlex.split(command)
     except ValueError:

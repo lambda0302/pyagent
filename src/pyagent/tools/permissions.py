@@ -1,9 +1,8 @@
-"""Allow/deny rules for dangerous operations (writes, shell commands).
+"""危险操作（写文件、Shell 命令）的 allow/deny 规则。
 
-Rules are remembered per target: for writes the target is a path (glob), for
-bash it is a command prefix.  Rules persist to a JSON file so "remember this
-rule" survives restarts.  When no rule matches, the caller may prompt the user
-(TUI) or fall back to the config default (headless).
+规则按目标记忆：写操作的目标是路径（glob），bash 是命令前缀。规则持久化到
+JSON 文件，因此「记住此规则」在重启后依然有效。当没有规则命中时，调用方可
+提示用户（TUI）或回退到配置默认值（无头）。
 """
 
 from __future__ import annotations
@@ -14,13 +13,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-#: action names
+#: action 名称
 ACTION_WRITE = "write"
 ACTION_BASH = "bash"
 
 
 class PermissionDeniedError(Exception):
-    """Raised when a user/rule denies an operation."""
+    """用户/规则拒绝某操作时抛出。"""
 
 
 @dataclass
@@ -52,7 +51,7 @@ class PermissionManager:
                     )
                 )
         except (json.JSONDecodeError, KeyError, OSError):
-            # A corrupt rules file should not brick the agent; ignore it.
+            # 损坏的规则文件不应让 agent 瘫痪；忽略之。
             self.rules = []
 
     def save(self) -> None:
@@ -69,7 +68,7 @@ class PermissionManager:
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def decide(self, action: str, target: str) -> str | None:
-        """Return 'allow' or 'deny' if a rule matches ``target``, else None."""
+        """若某条规则命中 ``target`` 则返回 'allow' 或 'deny'，否则返回 None。"""
         for rule in self.rules:
             if rule.action != action:
                 continue
@@ -84,27 +83,27 @@ class PermissionManager:
 
 
 def _matches(pattern: str, target: str) -> bool:
-    """Match a path glob or a command-prefix pattern against a target."""
+    """用路径 glob 或命令前缀模式匹配目标。"""
     pattern_n = pattern.replace("\\", "/")
     target_n = target.replace("\\", "/")
-    # For bash: pattern is a prefix match on the command string.
+    # 对 bash：pattern 是对命令串的前缀匹配。
     if pattern.startswith("cmd:"):
         prefix = pattern[4:]
         return target.lstrip().lower().startswith(prefix.lower())
-    # For write: fnmatch on the whole (normalised) path.
+    # 对 write：对整个（归一化后的）路径做 fnmatch。
     return fnmatch.fnmatch(target_n, pattern_n)
 
 
 def ensure_allowed(permissions, renderer, config, action: str, target: str, remember_hint=None) -> str:
-    """Resolve a permission decision for ``action``/``target``.
+    """为 ``action``/``target`` 解析一个权限判定。
 
-    Order of resolution:
-      1. a stored rule (return it),
-      2. an interactive prompt (renderer), remembering the rule if asked,
-      3. the config default (headless / non-interactive).
+    解析顺序：
+      1. 命中的已记忆规则（直接返回）；
+      2. 交互式提示（渲染器），如用户要求则记住规则；
+      3. 配置默认值（无头 / 非交互）。
 
-    Returns ``"allow"`` or ``"deny"``.  Raises :class:`PermissionDeniedError`
-    when the decision is ``deny``.
+    返回 ``"allow"`` 或 ``"deny"``。判定为 ``deny`` 时抛出
+    :class:`PermissionDeniedError`。
     """
     decision = permissions.decide(action, target)
     if decision is not None:
@@ -121,7 +120,7 @@ def ensure_allowed(permissions, renderer, config, action: str, target: str, reme
             raise PermissionDeniedError(f"{action} denied by user: {target}")
         return decision
 
-    # Non-interactive path: no live user to ask — apply the config default.
+    # 非交互路径：没有实时用户可询问——套用配置默认值。
     default = _default_for(config, action)
     if default == "deny":
         raise PermissionDeniedError(

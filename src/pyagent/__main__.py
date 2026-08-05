@@ -1,4 +1,4 @@
-"""Entry point for ``python -m pyagent``."""
+"""``python -m pyagent`` 的入口。"""
 
 from pyagent.cli import main
 

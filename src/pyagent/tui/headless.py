@@ -1,9 +1,8 @@
-"""Plain-text renderer for single-shot (non-TUI) runs.
+"""单次问答（非 TUI）模式下的纯文本渲染器。
 
-Streams assistant text straight to stdout so ``pyagent "prompt"`` reads like a
-normal CLI.  Permission and diff confirmations still prompt when stdin is a
-terminal (so dangerous commands can be denied), and fall back to auto-allow
-when piped / non-interactive.
+直接把助手文本流式写到 stdout，让 ``pyagent "prompt"`` 读起来像普通 CLI。
+权限与 diff 确认在 stdin 为终端时仍会提示（这样危险命令可以被拒绝）；当输入
+被管道接管 / 非交互时回退为自动放行。
 """
 
 from __future__ import annotations

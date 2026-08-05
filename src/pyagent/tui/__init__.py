@@ -1,1 +1,1 @@
-"""TUI layer: interactive app, renderer, and the headless CLI renderer."""
+"""TUI 层：交互式应用、渲染器，以及无头 CLI 渲染器。"""

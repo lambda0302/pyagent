@@ -1,4 +1,4 @@
-"""F3 (config): TOML loading, validation errors, key resolution."""
+"""F3（配置）：TOML 加载、校验错误、key 解析。"""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ def _write(tmp_path, text):
 class TestLoadConfig:
     def test_defaults_when_no_file(self, tmp_path, monkeypatch):
         monkeypatch.delenv("PYAGENT_CONFIG", raising=False)
-        # Point the default location at a path that does not exist so the test
-        # does not depend on the developer's real ~/.pyagent/config.toml.
+        # 把默认位置指向一个不存在的路径，使测试不依赖开发者真实的
+        # ~/.pyagent/config.toml。
         monkeypatch.setattr("pyagent.config.DEFAULT_CONFIG_PATH", tmp_path / "missing.toml")
         config = load_config()
         assert config.model.model == "gpt-4o-mini"

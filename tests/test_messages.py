@@ -1,4 +1,4 @@
-"""F1–F3 (sessions): save to disk, round-trip load, list metadata."""
+"""F1–F3（会话）：保存到磁盘、往返加载、列出元数据。"""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ class TestSessionPersistence:
         Session(session_id="new").save(tmp_path)
         ids = [e["session_id"] for e in list_sessions(tmp_path)]
         assert set(ids) == {"old", "new"}
-        # "new" was saved last -> sorted first by updated_at
+        # "new" 最后保存 → 按 updated_at 排在最前
         assert ids[0] == "new"
 
     def test_set_system_dedupes(self):
@@ -50,7 +50,7 @@ class TestSessionPersistence:
         assert new_session_id() != new_session_id()
 
     def test_save_survives_lone_surrogates(self, tmp_path):
-        """A lone surrogate (from a mid-stream UTF-8 split) must not crash save."""
+        """孤立代理字符（流式时 UTF-8 被切断产生）不得让保存崩溃。"""
         session = Session(session_id="surrogate")
         session.messages = [{"role": "assistant", "content": "bad \udc80 char"}]
         session.save(tmp_path)

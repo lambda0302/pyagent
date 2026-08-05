@@ -1,4 +1,4 @@
-"""D1: TUI command dispatch, /quit exit, Ctrl+C handling, session save."""
+"""D1：TUI 命令分发、/quit 退出、Ctrl+C 处理、会话保存。"""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def test_quit_exits_and_saves_session(tmp_path, monkeypatch):
     )
     app._prompt = None
     monkeypatch.setattr("builtins.input", _Input(["/quit"]))
-    app.run()  # should return cleanly, not raise
+    app.run()  # 应干净返回，不抛异常
     assert (tmp_path / "q-session.json").exists()
 
 
@@ -74,7 +74,7 @@ def test_keyboard_interrupt_is_caught(tmp_path, monkeypatch):
         return "/quit"
 
     monkeypatch.setattr("builtins.input", interrupting_input)
-    app.run()  # Ctrl+C must not crash the TUI
+    app.run()  # Ctrl+C 不得让 TUI 崩溃
     assert (tmp_path / "int-session.json").exists()
 
 
@@ -94,7 +94,7 @@ def test_task_runs_loop_and_autosaves(tmp_path, monkeypatch):
     app.run()
     assert loop.prompts == ["create a file"]
     assert len(session.messages) == 2
-    # auto-saved after the task and again on exit
+    # 任务后与退出时都会自动保存
     assert (tmp_path / "task-session.json").exists()
 
 

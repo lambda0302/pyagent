@@ -1,1 +1,1 @@
-"""Tool system: registry, file tools, shell tool, permission manager."""
+"""工具系统：注册表、文件工具、Shell 工具、权限管理器。"""

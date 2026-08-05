@@ -1,7 +1,6 @@
-"""Small stdin-based prompt helpers shared by the renderers.
+"""渲染器共享的小型 stdin 确认辅助函数。
 
-Kept deliberately dependency-light so both the rich TUI renderer and the plain
-CLI renderer can reuse the exact same confirmation logic.
+刻意保持轻依赖，让 rich TUI 渲染器与纯文本 CLI 渲染器复用完全相同的确认逻辑。
 """
 
 from __future__ import annotations
@@ -10,12 +9,11 @@ _HELP = "  [y]es once  [n]o once  [a]llow always  [d]eny always"
 
 
 def ask_permission(action: str, target: str, interactive: bool = True) -> tuple[str, bool]:
-    """Ask the user to allow/deny an operation.
+    """请求用户允许/拒绝某个操作。
 
-    Returns ``(decision, remember)`` where ``decision`` is ``"allow"`` or
-    ``"deny"`` and ``remember`` is True when the user asked to remember the rule.
-    In non-interactive mode, silently allow (matching the config-default path
-    used by headless runs).
+    返回 ``(decision, remember)``，其中 ``decision`` 为 ``"allow"`` 或
+    ``"deny"``，``remember`` 在用户要求记住规则时为 True。非交互模式下静默
+    放行（与无头运行时使用的配置默认值路径一致）。
     """
     if not interactive:
         return "allow", False
@@ -38,7 +36,7 @@ def ask_permission(action: str, target: str, interactive: bool = True) -> tuple[
 
 
 def ask_confirm(prompt_text: str, default: bool = False, interactive: bool = True) -> bool:
-    """Yes/no confirmation.  Returns True when the user confirms."""
+    """是/否确认。用户确认时返回 True。"""
     if not interactive:
         return True
     suffix = " [y/N] " if not default else " [Y/n] "

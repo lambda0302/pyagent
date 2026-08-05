@@ -1,7 +1,7 @@
-"""LLM client interface and the OpenAI-compatible implementation.
+"""LLM 客户端接口与 OpenAI 兼容实现。
 
-The :class:`LLMClient` ABC is the seam that lets v2 plug in other providers
-(Anthropic, Ollama, ...) without touching the agent loop.
+:class:`LLMClient` 抽象基类是预留的接缝：v2 可以在不触碰 agent 循环的前提下
+接入其他供应商（Anthropic、Ollama 等）。
 """
 
 from __future__ import annotations
@@ -14,21 +14,21 @@ from pyagent.config import ModelConfig
 
 
 class ModelError(Exception):
-    """Raised when a model call fails (network, auth, bad response, ...)."""
+    """模型调用失败时抛出（网络、鉴权、异常响应等）。"""
 
 
 @dataclass
 class ToolCall:
-    """A function call requested by the model."""
+    """模型请求的一个函数调用。"""
 
     id: str
     name: str
-    arguments: str  # raw JSON object string
+    arguments: str  # 原始 JSON 对象字符串
 
 
 @dataclass
 class LLMResponse:
-    """A complete model response: text and/or tool calls."""
+    """一次完整的模型响应：文本和/或工具调用。"""
 
     content: str | None = None
     tool_calls: list[ToolCall] = field(default_factory=list)
@@ -39,12 +39,12 @@ class LLMResponse:
         return bool(self.tool_calls)
 
 
-#: Callback receiving a text delta as the model streams a response.
+#: 模型流式输出文本增量时调用的回调。
 DeltaFn = Callable[[str], None]
 
 
 class LLMClient(ABC):
-    """Uniform interface the agent loop talks to."""
+    """agent 循环所对话的统一接口。"""
 
     @abstractmethod
     def complete(
@@ -54,18 +54,18 @@ class LLMClient(ABC):
         stream: bool = False,
         on_delta: DeltaFn | None = None,
     ) -> LLMResponse:
-        """Run one model call.
+        """执行一次模型调用。
 
         Args:
-            messages: OpenAI-style message list.
-            tools: tool schema list (OpenAI ``tools`` format), optional.
-            stream: when True, feed text deltas to ``on_delta``.
-            on_delta: optional callback for streamed text deltas.
+            messages: OpenAI 风格的消息列表。
+            tools: 工具 schema 列表（OpenAI 的 ``tools`` 格式），可选。
+            stream: 为 True 时把文本增量喂给 ``on_delta``。
+            on_delta: 流式文本增量的可选回调。
         """
 
 
 class OpenAILLMClient(LLMClient):
-    """OpenAI-compatible chat completions client (uses the ``openai`` package)."""
+    """OpenAI 兼容的对话补全客户端（使用 ``openai`` 包）。"""
 
     def __init__(self, config: ModelConfig, tool_schemas: list[dict] | None = None):
         self.config = config
@@ -78,7 +78,7 @@ class OpenAILLMClient(LLMClient):
             )
         try:
             from openai import OpenAI
-        except ImportError as exc:  # pragma: no cover - env issue
+        except ImportError as exc:  # pragma: no cover - 环境问题
             raise ModelError("the 'openai' package is not installed; run `pip install openai`") from exc
         self._client = OpenAI(api_key=api_key, base_url=config.base_url, timeout=config.timeout)
 
@@ -96,7 +96,7 @@ class OpenAILLMClient(LLMClient):
             resp = self._client.chat.completions.create(**kwargs)
             return _parse_response(resp)
 
-        # Streaming: accumulate the response while forwarding text deltas.
+        # 流式：一边转发文本增量，一边累积完整响应。
         tool_calls: dict[int, dict] = {}
         content_parts: list[str] = []
         usage: dict | None = None
@@ -163,8 +163,8 @@ def _parse_response(resp: object) -> LLMResponse:
 
 
 def _clean_text(text: str | None) -> str | None:
-    """Strip lone surrogates (e.g. from a mid-stream UTF-8 split) that would
-    otherwise crash JSON serialisation.  Replaces them with U+FFFD."""
+    """去掉孤立的代理字符（例如流式过程中 UTF-8 被切断产生的），否则会
+    破坏 JSON 序列化。用 U+FFFD 替换。"""
     if text is None:
         return None
     return text.encode("utf-8", errors="replace").decode("utf-8")
@@ -179,7 +179,7 @@ def _serialise_usage(usage: object) -> dict:
 
 
 def build_system_prompt(cwd: str) -> str:
-    """The system prompt that describes the agent's job and tool usage."""
+    """描述 agent 职责与工具用法的系统提示词。"""
     return (
         "You are pyagent, a coding agent that works autonomously in a local "
         "terminal. You accomplish user tasks by thinking, calling tools "

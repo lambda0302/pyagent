@@ -1,9 +1,8 @@
-"""The main agent loop: messages ↔ tool calls until a final answer.
+"""主 agent 循环：消息 ↔ 工具调用，直到给出最终答复。
 
-Flow per turn:
-    assemble/compress messages → call model → if tool calls requested, execute
-    each and feed results back → call model again → ... until the model replies
-    with text (or the turn budget is exhausted).
+每轮流程：
+    组装/压缩消息 → 调用模型 → 若模型请求工具，则逐个执行并把结果回填 →
+    再次调用模型 → …… 直到模型回复文本（或轮次预算耗尽）。
 """
 
 from __future__ import annotations
@@ -48,7 +47,7 @@ class AgentLoop:
         self.stats = LoopStats()
 
     def run(self, prompt: str | None = None) -> str:
-        """Run the loop.  Returns the final assistant text."""
+        """运行循环。返回最终的助手文本。"""
         if prompt:
             self.session.append_user(prompt)
         self.session.set_system(build_system_prompt(str(self.cwd)))
@@ -57,7 +56,7 @@ class AgentLoop:
         for _ in range(max_turns):
             self.stats.turns += 1
 
-            # Context compression before the call keeps history bounded.
+            # 调用前先做上下文压缩，让历史保持有界。
             messages = self.session.messages
             if self.context.should_compress(messages):
                 self.session.messages = self.context.compress(messages)
@@ -71,7 +70,7 @@ class AgentLoop:
                     self.renderer.on_final(response.content or "")
                 return response.content or ""
 
-            # Model wants tools: record the request, run each call, feed results.
+            # 模型要调用工具：记录请求，逐个执行并回填结果。
             self.session.append_assistant(
                 response.content,
                 tool_calls=[_to_api_tool_call(tc) for tc in response.tool_calls],

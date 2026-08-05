@@ -1,8 +1,8 @@
-"""Desktop GUI launcher: start the local server and open the window.
+"""桌面 GUI 启动器：启动本地服务并打开窗口。
 
-Uses ``pywebview`` for a native window (WebView2 on Windows).  Falls back to
-opening the default browser when ``--browser`` is given, when the env var
-``PYAGENT_GUI_BROWSER=1`` is set, or when pywebview is not installed.
+使用 ``pywebview`` 打开原生窗口（Windows 上用 WebView2）。当给定 ``--browser``、
+设置环境变量 ``PYAGENT_GUI_BROWSER=1``、或 pywebview 未安装时，回退为用默认
+浏览器打开。
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ def run_gui(
     use_browser: bool = False,
     port: int = 0,
 ) -> int:
-    """Serve the GUI and block until the window closes (or Ctrl+C in browser mode)."""
+    """提供 GUI 服务并阻塞，直到窗口关闭（浏览器模式下直到 Ctrl+C）。"""
     server = GuiServer(config, session_dir, cwd, port=port)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     url = f"http://127.0.0.1:{server.port}"
@@ -40,7 +40,7 @@ def run_gui(
         import webview
 
         webview.create_window("pyagent", url, min_size=(900, 620))
-        webview.start()  # drives the native window on the main thread
+        webview.start()  # 在主线程驱动原生窗口
 
     server.shutdown()
     return 0

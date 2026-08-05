@@ -1,4 +1,4 @@
-/* pyagent GUI — dark, Codex-like theme. */
+/* pyagent GUI —— 暗色、Codex 风格主题。 */
 
 :root {
   --bg: #0f1115;
@@ -27,7 +27,7 @@ html, body {
 
 #app { display: flex; height: 100vh; }
 
-/* ---------- sidebar ---------- */
+/* ---------- 侧边栏 ---------- */
 #sidebar {
   width: 240px;
   flex-shrink: 0;
@@ -75,7 +75,7 @@ html, body {
 #config-info { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); }
 .cfg { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, Consolas, monospace; }
 
-/* ---------- main ---------- */
+/* ---------- 主区域 ---------- */
 #main {
   flex: 1;
   display: flex;
@@ -110,7 +110,7 @@ html, body {
 .msg.assistant .bubble { background: var(--bg-panel); border: 1px solid var(--border); }
 .msg.user .bubble { background: var(--accent-dim); }
 
-/* tool cards */
+/* 工具卡片 */
 .tool-card {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -139,7 +139,7 @@ html, body {
 }
 .hidden { display: none !important; }
 
-/* input */
+/* 输入框 */
 #input-form {
   display: flex;
   gap: 8px;
@@ -175,7 +175,7 @@ html, body {
 
 #status { text-align: center; color: var(--text-dim); font-size: 12px; padding: 4px; min-height: 18px; }
 
-/* ---------- modals ---------- */
+/* ---------- 弹窗 ---------- */
 .modal {
   position: fixed;
   inset: 0;

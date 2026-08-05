@@ -1,6 +1,6 @@
-"""pyagent — a Codex-style terminal coding agent (CLI + TUI).
+"""pyagent —— Codex 风格的终端编码 Agent（CLI + TUI + 桌面 GUI）。
 
-Run with ``python -m pyagent`` or the ``pyagent`` console script.
+用 ``python -m pyagent`` 或 ``pyagent`` 命令启动。
 """
 
 __version__ = "0.1.0"

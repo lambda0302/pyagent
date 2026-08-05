@@ -1,13 +1,13 @@
 "use strict";
 
-/* pyagent GUI — vanilla JS client for the local server.
- * Connects to /api/stream (SSE), dispatches events, renders a Codex-like chat. */
+/* pyagent GUI —— 本地服务的原生 JS 客户端。
+ * 连接 /api/stream（SSE），分发事件，渲染 Codex 风格聊天界面。 */
 
 const state = {
   sessionId: null,
   running: false,
-  currentAssistant: null, // assistant bubble being streamed into
-  toolCardQueue: [],      // FIFO of running tool cards awaiting a result
+  currentAssistant: null, // 正在流式写入的助手气泡
+  toolCardQueue: [],      // 等待结果的工具卡片队列（FIFO）
   permissionReq: null,
   diffReq: null,
 };
@@ -17,7 +17,7 @@ const messagesEl = $("#messages");
 const inputEl = $("#input");
 const statusEl = $("#status");
 
-/* ---------- helpers ---------- */
+/* ---------- 辅助 ---------- */
 function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -49,7 +49,7 @@ function setRunning(on) {
   setStatus(on ? "运行中…" : "");
 }
 
-/* ---------- rendering ---------- */
+/* ---------- 渲染 ---------- */
 function appendMessage(role, content) {
   const wrap = el("div", `msg ${role}`);
   const bubble = el("div", "bubble");
@@ -132,7 +132,7 @@ function renderDiff(pre, diffText) {
   }
 }
 
-/* ---------- event dispatch ---------- */
+/* ---------- 事件分发 ---------- */
 function handle(msg) {
   switch (msg.type) {
     case "snapshot":
@@ -197,10 +197,10 @@ function connect() {
     }
     handle(msg);
   };
-  // EventSource auto-reconnects on error.
+  // EventSource 出错时会自动重连。
 }
 
-/* ---------- permission / diff ---------- */
+/* ---------- 权限 / diff ---------- */
 function showPermission(msg) {
   state.permissionReq = msg;
   $("#permission-text").textContent = `${msg.action} on: ${msg.target}`;
@@ -258,7 +258,7 @@ $("#diff-cancel").addEventListener("click", async () => {
   }
 });
 
-/* ---------- input / chat ---------- */
+/* ---------- 输入 / 聊天 ---------- */
 async function sendPrompt() {
   const text = inputEl.value.trim();
   if (!text || state.running) return;
@@ -284,7 +284,7 @@ inputEl.addEventListener("keydown", (e) => {
   }
 });
 
-/* ---------- sessions ---------- */
+/* ---------- 会话 ---------- */
 async function loadSessions() {
   try {
     const r = await fetch("/api/sessions");
@@ -295,12 +295,12 @@ async function loadSessions() {
       const item = el("div", "session-item");
       if (s.session_id === state.sessionId) item.classList.add("active");
       item.appendChild(el("div", "session-title", s.title || s.session_id));
-      item.appendChild(el("div", "session-meta", `${s.message_count} msgs · ${s.updated_at}`));
+      item.appendChild(el("div", "session-meta", `${s.message_count} 条消息 · ${s.updated_at}`));
       item.addEventListener("click", () => resumeSession(s.session_id));
       list.appendChild(item);
     }
   } catch {
-    /* server not ready yet */
+    /* 服务还没就绪，忽略 */
   }
 }
 
@@ -335,11 +335,11 @@ async function loadHealth() {
     info.appendChild(el("div", "cfg", `模型 ${h.model}`));
     info.appendChild(el("div", "cfg", `目录 ${h.cwd}`));
   } catch {
-    /* ignore */
+    /* 忽略 */
   }
 }
 
-/* ---------- init ---------- */
+/* ---------- 初始化 ---------- */
 window.addEventListener("load", () => {
   connect();
   loadSessions();
