@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pyagent</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">pyagent</div>
+      <button id="new-chat" type="button">＋ New chat</button>
+    </div>
+    <div class="sidebar-label">sessions</div>
+    <div id="session-list"></div>
+    <div id="config-info"></div>
+  </aside>
+
+  <main id="main">
+    <div id="messages"></div>
+    <form id="input-form" autocomplete="off">
+      <textarea id="input" rows="3"
+        placeholder="描述一个任务…（Enter 发送，Shift+Enter 换行）"></textarea>
+      <button id="send" type="submit">发送</button>
+    </form>
+    <div id="status"></div>
+  </main>
+</div>
+
+<!-- 权限确认弹窗 -->
+<div id="permission-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>⚠️ 需要权限确认</h3>
+    <p id="permission-text"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" data-decision="allow" data-remember="false">允许一次</button>
+      <button type="button" class="btn" data-decision="allow" data-remember="true">总是允许</button>
+      <button type="button" class="btn danger" data-decision="deny" data-remember="false">拒绝一次</button>
+      <button type="button" class="btn" data-decision="deny" data-remember="true">总是拒绝</button>
+    </div>
+  </div>
+</div>
+
+<!-- diff 预览弹窗 -->
+<div id="diff-modal" class="modal hidden">
+  <div class="modal-card wide">
+    <h3>🧩 差异预览</h3>
+    <p id="diff-path"></p>
+    <pre id="diff-body"></pre>
+    <div class="modal-actions">
+      <button type="button" id="diff-apply" class="btn primary">应用</button>
+      <button type="button" id="diff-cancel" class="btn">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

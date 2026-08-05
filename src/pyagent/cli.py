@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -18,6 +19,11 @@ from pyagent.config import ConfigError, load_config
 
 def main(argv: list[str] | None = None) -> int:
     _force_utf8_stdio()
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # ``prompt`` is a positional arg, so a true argparse subparser would steal
+    # the first non-option token from `pyagent "some prompt"`.  Sniff instead.
+    if argv and argv[0] == "gui":
+        return _run_gui(argv[1:])
     parser = _build_parser()
     args = parser.parse_args(argv)
 
@@ -125,6 +131,29 @@ def _run_single(config, session_dir: Path, prompt: str, resume_id: str | None, c
     else:
         print(f"\n── session saved: {session.session_id} (resume: pyagent --resume {session.session_id})")
     return 0
+
+
+def _run_gui(argv: list[str]) -> int:
+    """Launch the desktop GUI (`pyagent gui [--browser] [--config PATH] [--cwd PATH] [--port N]`)."""
+    from pyagent.gui.app import run_gui
+
+    parser = argparse.ArgumentParser(prog="pyagent gui", description="Launch the desktop GUI.")
+    parser.add_argument("--config", metavar="PATH", help="path to a TOML config file")
+    parser.add_argument("--cwd", metavar="PATH", help="working directory for tools")
+    parser.add_argument("--browser", action="store_true", help="open in the default browser instead of a native window")
+    parser.add_argument("--port", type=int, default=0, help="server port (default: a free port)")
+    ns = parser.parse_args(argv)
+
+    try:
+        config = load_config(ns.config)
+    except ConfigError as exc:
+        print(f"config error: {exc}", file=sys.stderr)
+        return 2
+
+    session_dir = Path(config.session.dir)
+    cwd = Path(ns.cwd).resolve() if ns.cwd else Path.cwd().resolve()
+    use_browser = ns.browser or os.environ.get("PYAGENT_GUI_BROWSER") == "1"
+    return run_gui(config, session_dir, cwd, use_browser=use_browser, port=ns.port)
 
 
 def _run_tui(config, session_dir: Path, resume_id: str | None, cwd: Path) -> int:

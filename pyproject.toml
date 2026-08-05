@@ -23,12 +23,18 @@ dev = [
     "pytest-mock>=3.12",
     "ruff>=0.4",
 ]
+gui = [
+    "pywebview>=5.0",
+]
 
 [project.scripts]
 pyagent = "pyagent.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"pyagent.gui" = ["static/*.html", "static/*.js", "static/*.css"]
 
 [tool.ruff]
 line-length = 120

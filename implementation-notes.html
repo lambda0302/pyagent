@@ -72,10 +72,26 @@
   <li>Session-id collisions within the same clock tick → add UUID suffix.</li>
 </ul>
 
+<h2>v2 扩展：桌面 GUI（2026-08-05）</h2>
+<p>项目已推送到 GitHub：<code>github.com/lambda0302/pyagent</code>（公开）。随后实现了桌面 GUI，全部通过无头测试与真实模型 E2E。</p>
+<ul>
+  <li>新增 <code>src/pyagent/gui/</code>：<code>renderer.py</code>（GUIRenderer，实现现有 renderer 协议，事件推队列 + 权限/diff 阻塞确认）、<code>server.py</code>（stdlib <code>ThreadingHTTPServer</code> + SSE，端点 <code>/api/health|stream|chat|permission|diff|sessions|resume|new</code>）、<code>app.py</code>（pywebview 原生窗口 + <code>--browser</code> 回退）、<code>static/</code>（Codex 风格暗色前端：聊天流式、工具卡片、权限/diff 弹窗、会话侧边栏）。</li>
+  <li>CLI 接入：<code>pyagent gui [--browser|--config|--cwd|--port]</code>（首 token 嗅探，不破坏 <code>pyagent "prompt"</code>）。</li>
+  <li>依赖：<code>gui</code> extra 新增 <code>pywebview</code>；后端零新依赖（纯标准库）。</li>
+  <li>并发模型：主线程跑 webview 事件循环；agent 线程跑 <code>AgentLoop</code>；权限/diff 由 <code>threading.Event</code> 阻塞、前端 POST 解除，超时兜底。</li>
+  <li>测试：<code>tests/test_gui.py</code> 10 例（渲染器单测 + urllib 服务端集成 + SSE 权限批准 E2E + 并发 409），全部无头可跑。</li>
+  <li>真实模型 E2E：事件序列 <code>snapshot→assistant_delta→tool_start(write)→permission→tool_result→tool_start(bash)→permission→tool_result→final→run_end</code>，文件正确写入。</li>
+</ul>
+
 <h2 class="resume">Resume Here</h2>
 <div class="resume">
-  <p><strong>状态：目标已完成。</strong> F1–F8 全部达成，验收记录表（ACCEPTANCE.md）逐条填为「通过」，E2E 四个剧本均走通并有运行记录。GOAL.md 完成标准已勾选。</p>
-  <p><strong>如需继续</strong>：v1 明确不做沙箱 / MCP / 多供应商 / 子 Agent（见 non-goals）。可扩展的接缝：<code>LLMClient</code>（新供应商）、<code>register_tool</code>（MCP 工具）、renderer 协议（新前端）。</p>
+  <p><strong>状态：v1（F1–F8）已完成并推送 GitHub；桌面 GUI 已实现并通过真实模型 E2E。</strong></p>
+  <p><strong>下一步精确动作：</strong></p>
+  <ol>
+    <li>把 GUI 工作提交（git commit + push）到 <code>github.com/lambda0302/pyagent</code>。</li>
+    <li>更新 README/账本已就绪；跑最终 <code>ruff check .</code> + <code>pytest</code> 全绿后提交。</li>
+    <li>用户可运行 <code>pyagent gui</code> 体验原生窗口（需真实桌面环境）。</li>
+  </ol>
 </div>
 
 <h2>Non-goals (v1, respected)</h2>

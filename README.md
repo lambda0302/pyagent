@@ -99,6 +99,21 @@ pyagent --config <path>    # use a specific TOML config
 pyagent --cwd <path>       # working directory for tools
 ```
 
+### Desktop GUI
+
+A Codex-style desktop window (chat streaming, tool-call status cards,
+permission dialogs, diff previews, a session sidebar) — it reuses the same core
+loop and tools, served over a local loopback HTTP+SSE server and rendered in a
+native `pywebview` window (WebView2 on Windows).
+
+```bash
+pip install -e ".[gui]"        # install pywebview (optional extra)
+pyagent gui                    # native desktop window
+pyagent gui --browser          # fall back to the default browser instead
+```
+
+`PYAGENT_GUI_BROWSER=1` also forces browser mode.
+
 ## Tools
 
 | Tool        | Description                                                        |
